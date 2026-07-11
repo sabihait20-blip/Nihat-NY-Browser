@@ -1,0 +1,6 @@
+{
+  "name": "NY Proxy Multi-Mobile Browser",
+  "description": "A multi-view mobile browser emulator with built-in New York proxy simulation and routing for website testing and traffic analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
