@@ -32,6 +32,9 @@ export default function App() {
   const [masterIframeSrc, setMasterIframeSrc] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
   // Load Proxies
   useEffect(() => {
     fetch("/api/proxies")
@@ -103,9 +106,10 @@ export default function App() {
           }
         }
       } else if (type === 'SYNC_ACTION') {
-        // Broadcast Master scroll to all Slaves
+        // Broadcast Master scroll to active/visible Slaves to prevent DOM lag
         if (tabId === 'master') {
-          tabs.forEach(slave => {
+          const visibleSlaves = tabs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+          visibleSlaves.forEach(slave => {
             const iframe = document.getElementById(`iframe-${slave.id}`) as HTMLIFrameElement;
             if (iframe && iframe.contentWindow) {
               iframe.contentWindow.postMessage({ type: 'EXEC_SYNC', action, data }, '*');
@@ -116,7 +120,17 @@ export default function App() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [tabs, historyIndex, masterTab]);
+  }, [tabs, historyIndex, masterTab, currentPage]);
+
+  // Handle current page boundaries when tab counts change
+  useEffect(() => {
+    const maxPage = Math.ceil(tabs.length / itemsPerPage);
+    if (currentPage > maxPage && maxPage > 0) {
+      setCurrentPage(maxPage);
+    } else if (currentPage < 1 && maxPage > 0) {
+      setCurrentPage(1);
+    }
+  }, [tabs.length]);
 
   // Synchronize masterIframeSrc when master configuration parameters change (excluding URL to prevent infinite reload loops)
   useEffect(() => {
@@ -200,27 +214,36 @@ export default function App() {
   const handleSetSlaveCount = (count: number) => {
     if (proxies.length === 0 || count < 0) return;
     
-    if (count > tabs.length) {
-      const newTabs = [...tabs];
-      for (let i = tabs.length; i < count; i++) {
-        const nextIdx = i + 1;
+    // Safety cap at 20,000 as requested to prevent overflow
+    const cappedCount = Math.min(count, 20000);
+    
+    if (cappedCount > tabs.length) {
+      const baseId = Date.now();
+      const additionalCount = cappedCount - tabs.length;
+      const additionalTabs: TabConfig[] = [];
+      const currentUrl = masterTab.currentUrl;
+      const historyArr = [currentUrl];
+      
+      for (let i = 0; i < additionalCount; i++) {
+        const globalIdx = tabs.length + i;
+        const nextIdx = globalIdx + 1;
         const proxy = proxies[nextIdx % proxies.length];
         const preset = DEVICE_PRESETS[nextIdx % 3];
-        newTabs.push({
-          id: `slave-${Date.now()}-${i}`,
+        additionalTabs.push({
+          id: `slave-${baseId}-${globalIdx}`,
           name: `Node ${nextIdx.toString().padStart(2, '0')}`,
           device: preset.name,
           userAgent: preset.userAgent,
           width: preset.width,
           height: preset.height,
           proxyId: proxy.id,
-          currentUrl: masterTab.currentUrl,
-          history: [masterTab.currentUrl]
+          currentUrl: currentUrl,
+          history: historyArr
         });
       }
-      setTabs(newTabs);
-    } else if (count < tabs.length) {
-      setTabs(tabs.slice(0, count));
+      setTabs(prev => [...prev, ...additionalTabs]);
+    } else if (cappedCount < tabs.length) {
+      setTabs(prev => prev.slice(0, cappedCount));
     }
   };
 
@@ -396,7 +419,7 @@ export default function App() {
                <input 
                  type="number"
                  min="0"
-                 max="100"
+                 max="20000"
                  value={tabs.length}
                  onChange={(e) => handleSetSlaveCount(parseInt(e.target.value) || 0)}
                  className="bg-transparent w-full text-center text-slate-300 focus:outline-none font-mono text-sm py-1"
@@ -409,7 +432,7 @@ export default function App() {
                  <Plus className="w-4 h-4" />
                </button>
              </div>
-             <p className="text-[9px] text-slate-500 mt-2 text-center">Adjust count to auto-provision nodes</p>
+             <p className="text-[9px] text-slate-500 mt-2 text-center">Adjust count to auto-provision nodes (Max: 20,000)</p>
           </section>
           
           <div className="mt-auto border-t border-slate-700 pt-4 text-center">
@@ -464,11 +487,24 @@ export default function App() {
                 <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400 flex items-center gap-2">
                    <Grid className="w-4 h-4" /> Slave Nodes ({tabs.length})
                 </h2>
+                {tabs.length > itemsPerPage && (
+                  <div className="bg-blue-900/40 border border-blue-800/60 text-blue-300 text-xs px-3 py-1.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full mt-2">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 animate-pulse" />
+                      <span>
+                        <strong>Virtual Previews Active:</strong> Displaying {itemsPerPage} active previews at a time to prevent browser crashes. All {tabs.length} simulated nodes are operating and synced in parallel.
+                      </span>
+                    </div>
+                    <div className="flex-shrink-0 font-mono text-[10px] bg-blue-950 px-2 py-0.5 rounded border border-blue-800 text-blue-400 self-start sm:self-auto">
+                      Active Page Nodes: {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, tabs.length)}
+                    </div>
+                  </div>
+                )}
                 <span className="text-[10px] text-slate-500 font-mono">Scroll and clicks in Master will replicate here.</span>
              </div>
              
              <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 overflow-y-auto pr-2 pb-6 custom-scrollbar">
-                {tabs.map((tab) => {
+                {tabs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((tab) => {
                   const slaveProxy = proxies.find(p => p.id === tab.proxyId) || proxies[0];
                   
                   // Scale logic for iframe mini view
@@ -514,8 +550,59 @@ export default function App() {
                     </div>
                   );
                 })}
-             </div>
-          </div>
+</div>
+
+              {/* Pagination Control Bar */}
+              {Math.ceil(tabs.length / itemsPerPage) > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-slate-300 text-xs mt-3">
+                  <span className="font-mono text-slate-400">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, tabs.length)} of <strong className="text-blue-400">{tabs.length}</strong> nodes
+                  </span>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition text-[10px] font-semibold"
+                    >
+                      First
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition"
+                      title="Previous Page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    
+                    <span className="font-mono px-3">
+                      Page <strong className="text-blue-400">{currentPage}</strong> of <strong>{Math.ceil(tabs.length / itemsPerPage)}</strong>
+                    </span>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(prev => Math.min(Math.ceil(tabs.length / itemsPerPage), prev + 1))}
+                      disabled={currentPage === Math.ceil(tabs.length / itemsPerPage)}
+                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition"
+                      title="Next Page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(Math.ceil(tabs.length / itemsPerPage))}
+                      disabled={currentPage === Math.ceil(tabs.length / itemsPerPage)}
+                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition text-[10px] font-semibold"
+                    >
+                      Last
+                    </button>
+                  </div>
+                </div>
+              )}
+           </div>
 
         </section>
       </main>
