@@ -19,16 +19,18 @@ export default function App() {
     width: DEVICE_PRESETS[3].width,
     height: DEVICE_PRESETS[3].height,
     proxyId: "", // Will be set once proxies load
-    currentUrl: "https://ipinfo.io/",
-    history: ["https://ipinfo.io/"]
+    currentUrl: "https://www.hellosribordi.top/",
+    history: ["https://www.hellosribordi.top/"]
   });
 
   const [tabs, setTabs] = useState<TabConfig[]>([]);
-  const [inputUrl, setInputUrl] = useState("https://ipinfo.io/");
+  const [inputUrl, setInputUrl] = useState("https://www.hellosribordi.top/");
   const [loadingProxies, setLoadingProxies] = useState(true);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [humanizeEnabled, setHumanizeEnabled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [masterIframeSrc, setMasterIframeSrc] = useState<string>("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Load Proxies
   useEffect(() => {
@@ -37,7 +39,11 @@ export default function App() {
       .then(data => {
         setProxies(data);
         if (data.length > 0) {
-          setMasterTab(prev => ({ ...prev, proxyId: data[0].id }));
+          setMasterTab(prev => {
+            const updated = { ...prev, proxyId: data[0].id };
+            setMasterIframeSrc(getProxyUrl(updated));
+            return updated;
+          });
           
           // Generate 12 initial slave nodes!
           const initialSlaves: TabConfig[] = [];
@@ -52,8 +58,8 @@ export default function App() {
               width: preset.width,
               height: preset.height,
               proxyId: proxy.id,
-              currentUrl: "https://ipinfo.io/",
-              history: ["https://ipinfo.io/"]
+              currentUrl: "https://www.hellosribordi.top/",
+              history: ["https://www.hellosribordi.top/"]
             });
           }
           setTabs(initialSlaves);
@@ -75,13 +81,26 @@ export default function App() {
 
       if (type === 'NAVIGATE') {
         if (tabId === 'master') {
-          // Master navigated -> update Master AND ALL Slaves
-          setInputUrl(url);
-          setMasterTab(prev => ({ ...prev, currentUrl: url, history: [...prev.history, url] }));
-          setTabs(prev => prev.map(t => ({ ...t, currentUrl: url, history: [...t.history, url] })));
+          // Master navigated internally -> update Master config and ALL Slaves
+          // Note: we do NOT update masterIframeSrc here because the master iframe already navigated itself smoothly
+          if (url && url !== masterTab.currentUrl) {
+            setInputUrl(url);
+            
+            const newHistory = [...masterTab.history.slice(0, historyIndex + 1), url];
+            const newIndex = newHistory.length - 1;
+            
+            setHistoryIndex(newIndex);
+            setMasterTab(prev => ({ ...prev, currentUrl: url, history: newHistory }));
+            setTabs(prev => prev.map(t => {
+              if (t.currentUrl === url) return t;
+              return { ...t, currentUrl: url, history: [...t.history, url] };
+            }));
+          }
         } else {
           // Slave navigated independently
-          setTabs(prev => prev.map(t => t.id === tabId ? { ...t, currentUrl: url, history: [...t.history, url] } : t));
+          if (url) {
+            setTabs(prev => prev.map(t => t.id === tabId && t.currentUrl !== url ? { ...t, currentUrl: url, history: [...t.history, url] } : t));
+          }
         }
       } else if (type === 'SYNC_ACTION') {
         // Broadcast Master scroll to all Slaves
@@ -97,7 +116,51 @@ export default function App() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [tabs]);
+  }, [tabs, historyIndex, masterTab]);
+
+  // Synchronize masterIframeSrc when master configuration parameters change (excluding URL to prevent infinite reload loops)
+  useEffect(() => {
+    if (masterTab.proxyId) {
+      setMasterIframeSrc(getProxyUrl(masterTab));
+    }
+  }, [masterTab.proxyId, masterTab.userAgent, masterTab.device, humanizeEnabled, refreshKey]);
+
+  // Backup polling check using same-origin access to handle javascript-based / dynamic redirects
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const iframe = document.getElementById("iframe-master") as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+          const currentIframeUrl = iframe.contentWindow.location.href;
+          if (currentIframeUrl && currentIframeUrl.includes("/api/proxy-request")) {
+            const urlParams = new URLSearchParams(iframe.contentWindow.location.search);
+            const actualUrl = urlParams.get("url");
+            
+            if (actualUrl && actualUrl !== masterTab.currentUrl) {
+              setInputUrl(actualUrl);
+              setMasterTab(prev => {
+                if (prev.currentUrl === actualUrl) return prev;
+                const newHistory = [...prev.history, actualUrl];
+                setTimeout(() => setHistoryIndex(newHistory.length - 1), 0);
+                return { ...prev, currentUrl: actualUrl, history: newHistory };
+              });
+              setTabs(prev => prev.map(t => {
+                if (t.currentUrl === actualUrl) return t;
+                return {
+                  ...t,
+                  currentUrl: actualUrl,
+                  history: [...t.history, actualUrl]
+                };
+              }));
+            }
+          }
+        }
+      } catch (err) {
+        // Safe catch for cross-origin boundary transitions
+      }
+    }, 400);
+    return () => clearInterval(interval);
+  }, [masterTab.currentUrl]);
 
   const handleMasterNavigate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,8 +171,10 @@ export default function App() {
     const newHistory = [...masterTab.history.slice(0, historyIndex + 1), formatted];
     setHistoryIndex(newHistory.length - 1);
     
-    setMasterTab(prev => ({ ...prev, currentUrl: formatted, history: newHistory }));
+    const updatedMaster = { ...masterTab, currentUrl: formatted, history: newHistory };
+    setMasterTab(updatedMaster);
     setTabs(prev => prev.map(t => ({ ...t, currentUrl: formatted, history: [...t.history.slice(0, historyIndex + 1), formatted] })));
+    setMasterIframeSrc(getProxyUrl(updatedMaster));
   };
 
   const navigateHistory = (direction: 'back' | 'forward') => {
@@ -117,14 +182,18 @@ export default function App() {
        const prevUrl = masterTab.history[historyIndex - 1];
        setInputUrl(prevUrl);
        setHistoryIndex(historyIndex - 1);
-       setMasterTab(prev => ({ ...prev, currentUrl: prevUrl }));
+       const updatedMaster = { ...masterTab, currentUrl: prevUrl };
+       setMasterTab(updatedMaster);
        setTabs(prev => prev.map(t => ({ ...t, currentUrl: t.history[historyIndex - 1] || prevUrl })));
+       setMasterIframeSrc(getProxyUrl(updatedMaster));
     } else if (direction === 'forward' && historyIndex < masterTab.history.length - 1) {
        const nextUrl = masterTab.history[historyIndex + 1];
        setInputUrl(nextUrl);
        setHistoryIndex(historyIndex + 1);
-       setMasterTab(prev => ({ ...prev, currentUrl: nextUrl }));
+       const updatedMaster = { ...masterTab, currentUrl: nextUrl };
+       setMasterTab(updatedMaster);
        setTabs(prev => prev.map(t => ({ ...t, currentUrl: t.history[historyIndex + 1] || nextUrl })));
+       setMasterIframeSrc(getProxyUrl(updatedMaster));
     }
   };
 
@@ -159,10 +228,30 @@ export default function App() {
     handleSetSlaveCount(tabs.length + 1);
   };
 
+  const handleRefreshAll = () => {
+    const currentMasterUrl = masterTab.currentUrl;
+    
+    // Align all slaves to the current master URL
+    setTabs(prev => prev.map(t => {
+      if (t.currentUrl === currentMasterUrl) return t;
+      return {
+        ...t,
+        currentUrl: currentMasterUrl,
+        history: [...t.history, currentMasterUrl]
+      };
+    }));
+
+    // Trigger state/iframe recreation by updating refreshKey
+    setRefreshKey(prev => prev + 1);
+    
+    // Ensure inputUrl matches the Master's current URL
+    setInputUrl(currentMasterUrl);
+  };
+
   // Build proxy URL
   const getProxyUrl = (tab: TabConfig) => {
     if (!tab.proxyId) return "about:blank";
-    return `/api/proxy-request?url=${encodeURIComponent(tab.currentUrl)}&proxyId=${encodeURIComponent(tab.proxyId)}&userAgent=${encodeURIComponent(tab.userAgent)}&tabId=${encodeURIComponent(tab.id)}&humanize=${humanizeEnabled}`;
+    return `/api/proxy-request?url=${encodeURIComponent(tab.currentUrl)}&proxyId=${encodeURIComponent(tab.proxyId)}&userAgent=${encodeURIComponent(tab.userAgent)}&tabId=${encodeURIComponent(tab.id)}&humanize=${humanizeEnabled}&refreshKey=${refreshKey}`;
   };
 
   const activeMasterProxy = proxies.find(p => p.id === masterTab.proxyId);
@@ -191,7 +280,7 @@ export default function App() {
           </button>
         </div>
         
-        <div className="flex items-center gap-2 md:gap-4 flex-1 w-full md:max-w-2xl mx-0 md:mx-12">
+        <div className="flex items-center gap-2 md:gap-4 flex-1 w-full md:max-w-3xl mx-0 md:mx-6">
           <form onSubmit={handleMasterNavigate} className="w-full flex flex-col sm:flex-row gap-2 md:gap-3 relative">
             <div className="flex w-full relative">
               <div className="absolute left-1 top-1.5 flex gap-1">
@@ -213,9 +302,18 @@ export default function App() {
                 <Bookmark className="w-4 h-4" />
               </button>
             </div>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2.5 rounded-md text-sm font-semibold whitespace-nowrap shadow-md transition-colors flex items-center justify-center gap-2">
+            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2.5 rounded-md text-sm font-semibold whitespace-nowrap shadow-md transition-colors flex items-center justify-center gap-2" title="Navigate Master node to URL">
               <RefreshCcw className="w-4 h-4" />
               <span className="hidden sm:inline">Deploy</span>
+            </button>
+            <button 
+              type="button" 
+              onClick={handleRefreshAll}
+              className="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 px-4 md:px-5 py-2.5 rounded-md text-sm font-semibold whitespace-nowrap shadow-md transition-colors flex items-center justify-center gap-2"
+              title="Refresh and sync all nodes to current Master URL"
+            >
+              <RotateCw className="w-4 h-4" />
+              <span>Refresh All</span>
             </button>
           </form>
         </div>
@@ -349,7 +447,7 @@ export default function App() {
                   ) : (
                      <iframe 
                        id="iframe-master"
-                       src={getProxyUrl(masterTab)}
+                       key={`${masterTab.id}-${masterIframeSrc}-${refreshKey}`} src={masterIframeSrc || getProxyUrl(masterTab)}
                        className="absolute inset-0 w-full h-full border-0 bg-white"
                        title="Master Browser"
                        referrerPolicy="no-referrer"
@@ -388,6 +486,7 @@ export default function App() {
                       <div className="flex-1 relative overflow-hidden bg-white/5 flex justify-center">
                         <div className="absolute origin-top" style={{ width: tab.width, height: tab.height, transform: 'scale(0.4)' }}>
                            <iframe 
+                             key={`${tab.id}-${tab.currentUrl}-${tab.proxyId}-${tab.userAgent}-${refreshKey}`}
                              id={`iframe-${tab.id}`}
                              src={getProxyUrl(tab)}
                              className="w-full h-full border-0 bg-white"

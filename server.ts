@@ -251,8 +251,11 @@ app.get("/api/proxy-request", async (req, res) => {
       return res.status(400).send("Target page returned binary or unsupported non-text format.");
     }
 
+    // Capture the final URL after following any redirects
+    const finalUrl = (response.request?.res?.responseUrl as string) || (response.request?.responseURL as string) || formattedUrl;
+
     // Rewrite relative links, stylesheets, scripts, and images to keep everything routed through our backend proxy!
-    const parsedUrl = new URL(formattedUrl);
+    const parsedUrl = new URL(finalUrl);
     const origin = parsedUrl.origin;
 
     // Inject base href tag or rewrite links dynamically
@@ -287,11 +290,22 @@ app.get("/api/proxy-request", async (req, res) => {
         }, Math.floor(Math.random() * 3000) + 2000);
         ` : ''}
 
+        var _realParent = window.parent || window;
         // Prevent top-frame redirects (framebusting)
         window.onbeforeunload = function() {};
         if (window.self !== window.top) {
-          window.parent = null;
-          window.top = window.self;
+          try {
+            Object.defineProperty(window, 'parent', { get: function() { return null; } });
+            Object.defineProperty(window, 'top', { get: function() { return window.self; } });
+          } catch(e) {}
+        }
+
+        var tabId = new URLSearchParams(window.location.search).get('tabId') || '';
+        var currentRealUrl = decodeURI("${encodeURI(finalUrl)}");
+
+        // Notify parent of successful page load immediately!
+        if (_realParent && _realParent !== window) {
+          _realParent.postMessage({ type: 'NAVIGATE', tabId: tabId, url: currentRealUrl }, '*');
         }
 
         function getCssPath(el) {
@@ -316,7 +330,6 @@ app.get("/api/proxy-request", async (req, res) => {
             return path.join(" > ");
         }
 
-        var tabId = new URLSearchParams(window.location.search).get('tabId') || '';
         var isSyncing = false;
 
         // Listen for actions from parent (Master -> Slaves sync)
@@ -359,7 +372,7 @@ app.get("/api/proxy-request", async (req, res) => {
           if (isSyncing) return;
           var maxScroll = document.documentElement.scrollHeight - window.innerHeight;
           var pct = maxScroll > 0 ? window.scrollY / maxScroll : 0;
-          window.parent.postMessage({ type: 'SYNC_ACTION', tabId: tabId, action: 'scroll', data: { pct: pct } }, '*');
+          _realParent.postMessage({ type: 'SYNC_ACTION', tabId: tabId, action: 'scroll', data: { pct: pct } }, '*');
         }, {passive: true});
 
         // Broadcast change events to parent
@@ -367,7 +380,7 @@ app.get("/api/proxy-request", async (req, res) => {
           if (isSyncing) return;
           var path = getCssPath(e.target);
           if (path && e.target.value !== undefined) {
-             window.parent.postMessage({ type: 'SYNC_ACTION', tabId: tabId, action: 'change', data: { path: path, value: e.target.value } }, '*');
+             _realParent.postMessage({ type: 'SYNC_ACTION', tabId: tabId, action: 'change', data: { path: path, value: e.target.value } }, '*');
           }
         }, true);
 
@@ -377,7 +390,7 @@ app.get("/api/proxy-request", async (req, res) => {
           
           var path = getCssPath(e.target);
           if (path) {
-             window.parent.postMessage({ type: 'SYNC_ACTION', tabId: tabId, action: 'click', data: { path: path } }, '*');
+             _realParent.postMessage({ type: 'SYNC_ACTION', tabId: tabId, action: 'click', data: { path: path } }, '*');
           }
           
           var target = e.target.closest('a');
@@ -385,10 +398,22 @@ app.get("/api/proxy-request", async (req, res) => {
             var href = target.getAttribute('href');
             if (href && !href.startsWith('javascript:') && !href.startsWith('#')) {
               e.preventDefault();
-              // Compute absolute URL
+              // Compute absolute target URL
               var absoluteUrl = new URL(href, document.baseURI).href;
-              // Post message to parent iframe to update current navigation
-              window.parent.postMessage({ type: 'NAVIGATE', tabId: tabId, url: absoluteUrl }, '*');
+              
+              // Resolve to proxied URL so we stay inside the proxy!
+              var searchParams = new URLSearchParams(window.location.search);
+              searchParams.set('url', absoluteUrl);
+              var proxiedUrl = window.location.pathname + '?' + searchParams.toString();
+              
+              // Ensure link stays inside current frame
+              target.setAttribute('target', '_self');
+              
+              // Post message to parent iframe to update current navigation (updates the URL input and other tabs)
+              _realParent.postMessage({ type: 'NAVIGATE', tabId: tabId, url: absoluteUrl }, '*');
+              
+              // Navigate this iframe directly to the proxied URL smoothly!
+              window.location.href = proxiedUrl;
             }
           }
         }, true);
@@ -400,15 +425,22 @@ app.get("/api/proxy-request", async (req, res) => {
           var action = form.getAttribute('action') || '';
           var method = (form.getAttribute('method') || 'GET').toUpperCase();
           var absoluteUrl = new URL(action, document.baseURI).href;
+          var finalUrl = absoluteUrl;
           
           if (method === 'GET') {
             var params = new URLSearchParams(new FormData(form)).toString();
-            var finalUrl = absoluteUrl + (absoluteUrl.includes('?') ? '&' : '?') + params;
-            window.parent.postMessage({ type: 'NAVIGATE', tabId: tabId, url: finalUrl }, '*');
-          } else {
-            console.warn('POST form submissions are emulated as GET navigate via proxy');
-            window.parent.postMessage({ type: 'NAVIGATE', tabId: tabId, url: absoluteUrl }, '*');
+            finalUrl = absoluteUrl + (absoluteUrl.includes('?') ? '&' : '?') + params;
           }
+          
+          // Post message to parent
+          _realParent.postMessage({ type: 'NAVIGATE', tabId: tabId, url: finalUrl }, '*');
+          
+          // Build proxied URL
+          var searchParams = new URLSearchParams(window.location.search);
+          searchParams.set('url', finalUrl);
+          var proxiedUrl = window.location.pathname + '?' + searchParams.toString();
+          
+          window.location.href = proxiedUrl;
         }, true);
       </script>
     `;
