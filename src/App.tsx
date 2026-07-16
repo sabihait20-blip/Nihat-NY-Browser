@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Globe, Plus, Trash2, RotateCw, Settings, Grid, Phone, CheckCircle2, AlertCircle, RefreshCcw, MapPin, Search, ShieldCheck, ChevronLeft, ChevronRight, Bookmark, Activity, Menu, X } from "lucide-react";
+import { Globe, Plus, Trash2, RotateCw, Settings, Grid, Phone, CheckCircle2, AlertCircle, RefreshCcw, MapPin, Search, ShieldCheck, ChevronLeft, ChevronRight, Bookmark, Activity, Menu, X, Play, Pause, Timer, Clock } from "lucide-react";
 import { ProxyConfig, TabConfig, DevicePreset } from "./types";
 
 const DEVICE_PRESETS: DevicePreset[] = [
@@ -34,6 +34,8 @@ export default function App() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
+  const [autoNextEnabled, setAutoNextEnabled] = useState(false);
+  const [timerProgress, setTimerProgress] = useState(0);
 
   // Load Proxies
   useEffect(() => {
@@ -131,6 +133,36 @@ export default function App() {
       setCurrentPage(1);
     }
   }, [tabs.length]);
+
+  // 10-seconds auto-advance timer logic
+  useEffect(() => {
+    if (!autoNextEnabled) {
+      setTimerProgress(0);
+      return;
+    }
+
+    setTimerProgress(0);
+
+    const intervalTime = 100; // Update progress bar every 100ms for a buttery-smooth transition
+    const totalTime = 10000;  // 10 seconds total duration
+    const increment = (intervalTime / totalTime) * 100;
+
+    const interval = setInterval(() => {
+      setTimerProgress(prev => {
+        if (prev >= 100) {
+          setCurrentPage(currentPagePrev => {
+            const maxPage = Math.ceil(tabs.length / itemsPerPage);
+            if (maxPage <= 1) return 1;
+            return currentPagePrev >= maxPage ? 1 : currentPagePrev + 1;
+          });
+          return 100; // It will immediately reset to 0 upon effect rerun
+        }
+        return prev + increment;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(interval);
+  }, [autoNextEnabled, tabs.length, currentPage]);
 
   // Synchronize masterIframeSrc when master configuration parameters change (excluding URL to prevent infinite reload loops)
   useEffect(() => {
@@ -399,6 +431,15 @@ export default function App() {
                   <div className={`w-3 h-3 bg-white rounded-full transition-transform ${humanizeEnabled ? 'translate-x-4' : 'translate-x-0'}`}></div>
                 </div>
               </div>
+              <div className="bg-[#0F172A] p-2 rounded border border-slate-700 flex items-center justify-between gap-1 cursor-pointer" onClick={() => setAutoNextEnabled(!autoNextEnabled)}>
+                <div className="flex items-center gap-2">
+                  <Timer className={`w-4 h-4 ${autoNextEnabled ? 'text-blue-400 font-bold' : 'text-slate-500'}`} />
+                  <span className="text-[11px] text-slate-300">Auto Next Page (10s)</span>
+                </div>
+                <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${autoNextEnabled ? 'bg-blue-500' : 'bg-slate-600'}`}>
+                  <div className={`w-3 h-3 bg-white rounded-full transition-transform ${autoNextEnabled ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                </div>
+              </div>
             </div>
           </section>
           
@@ -554,51 +595,89 @@ export default function App() {
 
               {/* Pagination Control Bar */}
               {Math.ceil(tabs.length / itemsPerPage) > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-slate-300 text-xs mt-3">
-                  <span className="font-mono text-slate-400">
-                    Showing {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, tabs.length)} of <strong className="text-blue-400">{tabs.length}</strong> nodes
-                  </span>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition text-[10px] font-semibold"
-                    >
-                      First
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition"
-                      title="Previous Page"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
+                <div className="space-y-2 mt-3">
+                  {/* Timer Progress Indicator */}
+                  {autoNextEnabled && (
+                    <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden relative">
+                      <div 
+                        className="bg-blue-500 h-full transition-all duration-100 ease-linear"
+                        style={{ width: `${timerProgress}%` }}
+                      ></div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-slate-300 text-xs">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-slate-400">
+                        Showing {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, tabs.length)} of <strong className="text-blue-400">{tabs.length}</strong> nodes
+                      </span>
+                      
+                      {/* Auto-play Inline Toggle Button */}
+                      <button
+                        type="button"
+                        onClick={() => setAutoNextEnabled(!autoNextEnabled)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold transition ${
+                          autoNextEnabled 
+                            ? "bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30" 
+                            : "bg-slate-800 text-slate-400 border border-slate-700/60 hover:bg-slate-700"
+                        }`}
+                        title={autoNextEnabled ? "Pause Auto-Advance" : "Start Auto-Advance (10s)"}
+                      >
+                        {autoNextEnabled ? (
+                          <>
+                            <Pause className="w-3 h-3 text-blue-400 animate-pulse" />
+                            <span>Auto Advance: Active</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3 h-3 text-slate-400" />
+                            <span>Auto Advance (10s)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                     
-                    <span className="font-mono px-3">
-                      Page <strong className="text-blue-400">{currentPage}</strong> of <strong>{Math.ceil(tabs.length / itemsPerPage)}</strong>
-                    </span>
-                    
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage(prev => Math.min(Math.ceil(tabs.length / itemsPerPage), prev + 1))}
-                      disabled={currentPage === Math.ceil(tabs.length / itemsPerPage)}
-                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition"
-                      title="Next Page"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage(Math.ceil(tabs.length / itemsPerPage))}
-                      disabled={currentPage === Math.ceil(tabs.length / itemsPerPage)}
-                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition text-[10px] font-semibold"
-                    >
-                      Last
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition text-[10px] font-semibold"
+                      >
+                        First
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition"
+                        title="Previous Page"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      
+                      <span className="font-mono px-3">
+                        Page <strong className="text-blue-400">{currentPage}</strong> of <strong>{Math.ceil(tabs.length / itemsPerPage)}</strong>
+                      </span>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(tabs.length / itemsPerPage), prev + 1))}
+                        disabled={currentPage === Math.ceil(tabs.length / itemsPerPage)}
+                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition"
+                        title="Next Page"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage(Math.ceil(tabs.length / itemsPerPage))}
+                        disabled={currentPage === Math.ceil(tabs.length / itemsPerPage)}
+                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 transition text-[10px] font-semibold"
+                      >
+                        Last
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
