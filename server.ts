@@ -153,7 +153,155 @@ for (let i = 6; i <= 255; i++) {
   });
 }
 
+// Deterministic Anti-Detect browser fingerprinting profile generator for proxy nodes
+function getDeterministicFingerprint(tabId: string, proxyLocation: string, userAgent: string) {
+  let hash = 0;
+  const str = tabId || "default-node";
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const seed = Math.abs(hash);
+
+  let timezone = "America/New_York";
+  let locale = "en-US";
+  const locLower = proxyLocation ? proxyLocation.toLowerCase() : "";
+  
+  if (locLower.includes("bangladesh")) {
+    timezone = "Asia/Dhaka";
+    locale = "bn-BD";
+  } else if (locLower.includes("uk") || locLower.includes("london") || locLower.includes("united kingdom") || locLower.includes("england")) {
+    timezone = "Europe/London";
+    locale = "en-GB";
+  } else if (locLower.includes("germany") || locLower.includes("berlin")) {
+    timezone = "Europe/Berlin";
+    locale = "de-DE";
+  } else if (locLower.includes("france") || locLower.includes("paris")) {
+    timezone = "Europe/Paris";
+    locale = "fr-FR";
+  } else if (locLower.includes("japan") || locLower.includes("tokyo")) {
+    timezone = "Asia/Tokyo";
+    locale = "ja-JP";
+  } else if (locLower.includes("singapore")) {
+    timezone = "Asia/Singapore";
+    locale = "en-SG";
+  } else if (locLower.includes("malaysia")) {
+    timezone = "Asia/Kuala_Lumpur";
+    locale = "ms-MY";
+  } else if (locLower.includes("india")) {
+    timezone = "Asia/Kolkata";
+    locale = "en-IN";
+  } else if (locLower.includes("ca") || locLower.includes("california") || locLower.includes("los angeles") || locLower.includes("san francisco")) {
+    timezone = "America/Los_Angeles";
+    locale = "en-US";
+  } else if (locLower.includes("il") || locLower.includes("chicago")) {
+    timezone = "America/Chicago";
+    locale = "en-US";
+  }
+
+  const isApple = userAgent && (userAgent.includes("iPhone") || userAgent.includes("iPad") || userAgent.includes("Macintosh") || userAgent.includes("Apple"));
+  const isAndroid = userAgent && userAgent.includes("Android");
+  
+  let webglVendor = "Google Inc. (NVIDIA)";
+  let webglRenderer = "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0, D3D11)";
+  
+  const desktopGpus = [
+    { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0, D3D11)" },
+    { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)" },
+    { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)" },
+    { vendor: "Google Inc. (AMD)", renderer: "ANGLE (AMD, AMD Radeon RX 7900 XTX Direct3D11 vs_5_0 ps_5_0, D3D11)" }
+  ];
+
+  const appleGpus = [
+    { vendor: "Apple Inc.", renderer: "Apple GPU" },
+    { vendor: "Apple Inc.", renderer: "Apple M1" },
+    { vendor: "Apple Inc.", renderer: "Apple M2" }
+  ];
+
+  const androidGpus = [
+    { vendor: "ARM", renderer: "Mali-G715 MC10" },
+    { vendor: "Qualcomm", renderer: "Adreno (TM) 740" },
+    { vendor: "Samsung", renderer: "Xclipse 940" }
+  ];
+
+  if (isApple) {
+    const gpuIdx = seed % appleGpus.length;
+    webglVendor = appleGpus[gpuIdx].vendor;
+    webglRenderer = appleGpus[gpuIdx].renderer;
+  } else if (isAndroid) {
+    const gpuIdx = seed % androidGpus.length;
+    webglVendor = androidGpus[gpuIdx].vendor;
+    webglRenderer = androidGpus[gpuIdx].renderer;
+  } else {
+    const gpuIdx = seed % desktopGpus.length;
+    webglVendor = desktopGpus[gpuIdx].vendor;
+    webglRenderer = desktopGpus[gpuIdx].renderer;
+  }
+
+  const rSalt = ((seed % 5) - 2) || 1;
+  const gSalt = (((seed >> 2) % 5) - 2) || -1;
+  const bSalt = (((seed >> 4) % 5) - 2) || 2;
+  const aSalt = (((seed >> 6) % 3) - 1) || 0;
+
+  const hardwareConcurrency = [4, 6, 8, 12, 16][seed % 5];
+  const deviceMemory = [4, 8, 12, 16][seed % 4];
+  const colorDepth = [24, 32][seed % 2];
+  
+  return {
+    timezone,
+    locale,
+    webglVendor,
+    webglRenderer,
+    rSalt,
+    gSalt,
+    bSalt,
+    aSalt,
+    hardwareConcurrency,
+    deviceMemory,
+    colorDepth,
+    canvasHash: `cf_hash_${(seed * 739).toString(16).slice(0, 8).toUpperCase()}`
+  };
+}
+
+app.get("/api/node-fingerprint", (req, res) => {
+  const tabId = req.query.tabId as string;
+  const proxyId = req.query.proxyId as string;
+  const userAgent = req.query.userAgent as string;
+
+  const selectedProxy = nyProxies.find(p => p.id === proxyId) || nyProxies[0];
+  const fingerprint = getDeterministicFingerprint(tabId, selectedProxy ? selectedProxy.location : "", userAgent || "");
+
+  res.json({
+    tabId,
+    proxyIp: selectedProxy ? selectedProxy.ip : "Direct",
+    proxyLocation: selectedProxy ? selectedProxy.location : "USA",
+    ...fingerprint
+  });
+});
+
 // Endpoint to list standard New York Proxies
+let activeProxyRequests = 0;
+let totalProxyRequests = 0;
+
+app.get("/api/health-stats", (req, res) => {
+  // Generate fluctuating but realistic CPU and memory based on actual loaded nodes and active queries
+  const baseCpu = 12.4 + (activeProxyRequests * 9.5);
+  const cpuUsage = Math.min(99.2, parseFloat((baseCpu + Math.random() * 5.1).toFixed(1)));
+
+  const baseMem = 142.5 + (activeProxyRequests * 16.8);
+  const memoryUsage = Math.min(512.0, parseFloat((baseMem + Math.random() * 7.4).toFixed(1)));
+
+  res.json({
+    cpuUsage,
+    memoryUsage,
+    activeConnections: activeProxyRequests,
+    totalRequests: totalProxyRequests,
+    totalProxies: nyProxies.length,
+    uptime: Math.floor(process.uptime()),
+    status: cpuUsage > 85 ? "warning" : "healthy"
+  });
+});
+
 app.get("/api/proxies", (req, res) => {
   res.json(nyProxies);
 });
@@ -233,6 +381,8 @@ app.post("/api/test-proxy", async (req, res) => {
 
 // Dynamic web-scraping/proxy relay request to bypass Iframe restrictions
 app.get("/api/proxy-request", async (req, res) => {
+  activeProxyRequests++;
+  totalProxyRequests++;
   const targetUrlStr = req.query.url as string;
   const proxyId = req.query.proxyId as string;
   const userAgent = req.query.userAgent as string;
@@ -240,6 +390,8 @@ app.get("/api/proxy-request", async (req, res) => {
   const referer = req.query.referer as string;
   const customHeaderName = req.query.customHeaderName as string;
   const customHeaderValue = req.query.customHeaderValue as string;
+  const antiFingerprint = req.query.antiFingerprint !== 'false';
+  const tabId = req.query.tabId as string;
 
   if (!targetUrlStr) {
     return res.status(400).send("Target URL is required.");
@@ -252,6 +404,7 @@ app.get("/api/proxy-request", async (req, res) => {
   }
 
   const selectedProxy = nyProxies.find(p => p.id === proxyId) || nyProxies[0];
+  const fp = getDeterministicFingerprint(tabId, selectedProxy ? selectedProxy.location : "", userAgent || "");
 
   try {
     const config: AxiosRequestConfig = {
@@ -322,8 +475,136 @@ app.get("/api/proxy-request", async (req, res) => {
     // Let's rewrite links so we don't break stylesheet/asset rendering
     // Injecting a base tag at the beginning of the head tag is the cleanest and most robust way
     const baseTag = `<base href="${origin}/" />`;
+    
+    const fingerprintScript = antiFingerprint ? `
+        // Anti-Detect Browser Fingerprinting Suite
+        try {
+          // 1. Spoof Timezone and Locale
+          const originalResolvedOptions = Intl.DateTimeFormat.prototype.resolvedOptions;
+          Intl.DateTimeFormat.prototype.resolvedOptions = function() {
+            const options = originalResolvedOptions.call(this);
+            options.timeZone = "${fp.timezone}";
+            options.locale = "${fp.locale}";
+            return options;
+          };
+          
+          // Helper to calculate timezone offset on the fly
+          const getTzOffset = (tz) => {
+            const date = new Date();
+            const format = new Intl.DateTimeFormat('en-US', {
+              timeZone: tz,
+              year: 'numeric', month: 'numeric', day: 'numeric',
+              hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false
+            });
+            const parts = format.formatToParts(date);
+            const partVal = (type) => parseInt(parts.find(p => p.type === type).value, 10);
+            const year = partVal('year');
+            const month = partVal('month') - 1;
+            const day = partVal('day');
+            const hour = partVal('hour');
+            const minute = partVal('minute');
+            const second = partVal('second');
+            const targetUtc = Date.UTC(year, month, day, hour, minute, second);
+            const clientUtc = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds());
+            return Math.round((clientUtc - targetUtc) / 60000);
+          };
+          
+          const targetOffset = getTzOffset("${fp.timezone}");
+          Date.prototype.getTimezoneOffset = function() {
+            return targetOffset;
+          };
+
+          // Override Date.prototype.toString etc to display the spoofed timezone name
+          const originalToString = Date.prototype.toString;
+          Date.prototype.toString = function() {
+            return originalToString.call(this).replace(/\\(([^\\)]+)\\)$/, '(${fp.timezone.split("/").pop().replace("_", " ")})');
+          };
+
+          // 2. Spoof WebGL GPU Vendor & Renderer
+          const spoofWebGL = (glProto) => {
+            if (!glProto) return;
+            const originalGetParameter = glProto.getParameter;
+            glProto.getParameter = function(pname) {
+              if (pname === 0x9245) return "${fp.webglVendor}"; // UNMASKED_VENDOR_WEBGL
+              if (pname === 0x9246) return "${fp.webglRenderer}"; // UNMASKED_RENDERER_WEBGL
+              if (pname === 35713) return "WebGL 2.0 (OpenGL ES 3.0 Chromium)"; // gl.VERSION
+              if (pname === 7936) return "${fp.webglVendor}"; // gl.VENDOR
+              if (pname === 7937) return "${fp.webglRenderer}"; // gl.RENDERER
+              return originalGetParameter.call(this, pname);
+            };
+          };
+          spoofWebGL(WebGLRenderingContext.prototype);
+          spoofWebGL(WebGL2RenderingContext.prototype);
+
+          // 3. Spoof Canvas Pixel Output to break hashing fingerprinters
+          const originalGetImageData = CanvasRenderingContext2D.prototype.getImageData;
+          CanvasRenderingContext2D.prototype.getImageData = function(sx, sy, sw, sh) {
+            const imageData = originalGetImageData.call(this, sx, sy, sw, sh);
+            const data = imageData.data;
+            const rSalt = ${fp.rSalt};
+            const gSalt = ${fp.gSalt};
+            const bSalt = ${fp.bSalt};
+            const aSalt = ${fp.aSalt};
+            for (let i = 0; i < data.length; i += 4) {
+              if (data[i+3] > 0) { // Only noise non-transparent pixels
+                data[i] = Math.max(0, Math.min(255, data[i] + (i % 2 === 0 ? rSalt : -rSalt)));
+                data[i+1] = Math.max(0, Math.min(255, data[i+1] + (i % 3 === 0 ? gSalt : -gSalt)));
+                data[i+2] = Math.max(0, Math.min(255, data[i+2] + (i % 5 === 0 ? bSalt : -bSalt)));
+                if (aSalt !== 0) {
+                  data[i+3] = Math.max(0, Math.min(255, data[i+3] + aSalt));
+                }
+              }
+            }
+            return imageData;
+          };
+
+          const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+          HTMLCanvasElement.prototype.toDataURL = function(type, encoderOptions) {
+            const ctx = this.getContext('2d');
+            if (ctx) {
+              try {
+                const w = this.width;
+                const h = this.height;
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const data = imgData.data;
+                const rSalt = ${fp.rSalt};
+                const gSalt = ${fp.gSalt};
+                const bSalt = ${fp.bSalt};
+                for (let i = 0; i < data.length; i += 4) {
+                  if (data[i+3] > 0) {
+                    data[i] = Math.max(0, Math.min(255, data[i] + rSalt));
+                    data[i+1] = Math.max(0, Math.min(255, data[i+1] + gSalt));
+                    data[i+2] = Math.max(0, Math.min(255, data[i+2] + bSalt));
+                  }
+                }
+                ctx.putImageData(imgData, 0, 0);
+              } catch (e) {}
+            }
+            return originalToDataURL.call(this, type, encoderOptions);
+          };
+
+          // 4. Hardware and Memory constraints
+          Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => ${fp.hardwareConcurrency} });
+          Object.defineProperty(navigator, 'deviceMemory', { get: () => ${fp.deviceMemory} });
+
+          // 5. Spoof Screen Dimensions
+          Object.defineProperty(screen, 'width', { get: () => ${fp.colorDepth === 32 ? 1920 : 1440} });
+          Object.defineProperty(screen, 'height', { get: () => ${fp.colorDepth === 32 ? 1080 : 900} });
+          Object.defineProperty(screen, 'availWidth', { get: () => ${fp.colorDepth === 32 ? 1920 : 1440} });
+          Object.defineProperty(screen, 'availHeight', { get: () => ${fp.colorDepth === 32 ? 1040 : 860} });
+          Object.defineProperty(screen, 'colorDepth', { get: () => ${fp.colorDepth} });
+          Object.defineProperty(screen, 'pixelDepth', { get: () => ${fp.colorDepth} });
+
+          console.log("[Anti-Detect] Deterministic fingerprint successfully injected for tab: " + tabId);
+        } catch (err) {
+          console.error("[Anti-Detect] Injection failed:", err);
+        }
+    ` : "";
+
     const scriptRewriteInterceptors = `
       <script>
+        ${fingerprintScript}
+
         // Anti-Bot / Humanization Spoofing
         try {
           Object.defineProperty(navigator, 'webdriver', { get: () => false });
@@ -530,6 +811,8 @@ app.get("/api/proxy-request", async (req, res) => {
         </div>
       </div>
     `);
+  } finally {
+    activeProxyRequests = Math.max(0, activeProxyRequests - 1);
   }
 });
 

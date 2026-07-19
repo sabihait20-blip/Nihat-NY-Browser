@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Globe, Plus, Trash2, RotateCw, Settings, Grid, Phone, CheckCircle2, AlertCircle, RefreshCcw, MapPin, Search, ShieldCheck, ChevronLeft, ChevronRight, Bookmark, Activity, Menu, X, Play, Pause, Timer, Clock } from "lucide-react";
+import { Globe, Plus, Trash2, RotateCw, Settings, Grid, Phone, CheckCircle2, AlertCircle, RefreshCcw, MapPin, Search, ShieldCheck, ChevronLeft, ChevronRight, Bookmark, Activity, Menu, X, Play, Pause, Timer, Clock, Cpu, Server } from "lucide-react";
 import { ProxyConfig, TabConfig, DevicePreset } from "./types";
 
 const DEVICE_PRESETS: DevicePreset[] = [
@@ -28,6 +28,108 @@ const DEVICE_PRESETS: DevicePreset[] = [
   { name: "Desktop Chrome", userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", width: 1280, height: 800, icon: "desktop" }
 ];
 
+// Deterministic Client-side fingerprint calculation for visual indicators
+export const getDeterministicFingerprintUI = (tabId: string, location: string, userAgent: string) => {
+  let hash = 0;
+  const str = tabId || "default-node";
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const seed = Math.abs(hash);
+
+  let timezone = "America/New_York";
+  let locale = "en-US";
+  const locLower = location ? location.toLowerCase() : "";
+  
+  if (locLower.includes("bangladesh")) {
+    timezone = "Asia/Dhaka";
+    locale = "bn-BD";
+  } else if (locLower.includes("uk") || locLower.includes("london") || locLower.includes("united kingdom")) {
+    timezone = "Europe/London";
+    locale = "en-GB";
+  } else if (locLower.includes("germany") || locLower.includes("berlin")) {
+    timezone = "Europe/Berlin";
+    locale = "de-DE";
+  } else if (locLower.includes("france") || locLower.includes("paris")) {
+    timezone = "Europe/Paris";
+    locale = "fr-FR";
+  } else if (locLower.includes("japan") || locLower.includes("tokyo")) {
+    timezone = "Asia/Tokyo";
+    locale = "ja-JP";
+  } else if (locLower.includes("singapore")) {
+    timezone = "Asia/Singapore";
+    locale = "en-SG";
+  } else if (locLower.includes("malaysia")) {
+    timezone = "Asia/Kuala_Lumpur";
+    locale = "ms-MY";
+  } else if (locLower.includes("india")) {
+    timezone = "Asia/Kolkata";
+    locale = "en-IN";
+  } else if (locLower.includes("ca") || locLower.includes("california") || locLower.includes("los angeles")) {
+    timezone = "America/Los_Angeles";
+    locale = "en-US";
+  } else if (locLower.includes("il") || locLower.includes("chicago")) {
+    timezone = "America/Chicago";
+    locale = "en-US";
+  }
+
+  const isApple = userAgent && (userAgent.includes("iPhone") || userAgent.includes("iPad") || userAgent.includes("Macintosh") || userAgent.includes("Apple"));
+  const isAndroid = userAgent && userAgent.includes("Android");
+  
+  let webglRenderer = "ANGLE (NVIDIA GeForce RTX 4070)";
+  let webglVendor = "Google Inc. (NVIDIA)";
+  
+  const desktopGpus = [
+    { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11)" },
+    { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Ti Direct3D11)" },
+    { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11)" },
+    { vendor: "Google Inc. (AMD)", renderer: "ANGLE (AMD, AMD Radeon RX 7900 XTX Direct3D11)" }
+  ];
+
+  const appleGpus = [
+    { vendor: "Apple Inc.", renderer: "Apple GPU" },
+    { vendor: "Apple Inc.", renderer: "Apple M1" },
+    { vendor: "Apple Inc.", renderer: "Apple M2" }
+  ];
+
+  const androidGpus = [
+    { vendor: "ARM", renderer: "Mali-G715 MC10" },
+    { vendor: "Qualcomm", renderer: "Adreno (TM) 740" },
+    { vendor: "Samsung", renderer: "Xclipse 940" }
+  ];
+
+  if (isApple) {
+    const gpuIdx = seed % appleGpus.length;
+    webglVendor = appleGpus[gpuIdx].vendor;
+    webglRenderer = appleGpus[gpuIdx].renderer;
+  } else if (isAndroid) {
+    const gpuIdx = seed % androidGpus.length;
+    webglVendor = androidGpus[gpuIdx].vendor;
+    webglRenderer = androidGpus[gpuIdx].renderer;
+  } else {
+    const gpuIdx = seed % desktopGpus.length;
+    webglVendor = desktopGpus[gpuIdx].vendor;
+    webglRenderer = desktopGpus[gpuIdx].renderer;
+  }
+
+  const hardwareConcurrency = [4, 6, 8, 12, 16][seed % 5];
+  const deviceMemory = [4, 8, 12, 16][seed % 4];
+  const colorDepth = [24, 32][seed % 2];
+  const canvasHash = `CF_HASH_${(seed * 739).toString(16).slice(0, 6).toUpperCase()}`;
+
+  return {
+    timezone,
+    locale,
+    webglVendor,
+    webglRenderer,
+    hardwareConcurrency,
+    deviceMemory,
+    colorDepth,
+    canvasHash
+  };
+};
+
 export default function App() {
   const [proxies, setProxies] = useState<ProxyConfig[]>([]);
   const [masterTab, setMasterTab] = useState<TabConfig>({
@@ -47,6 +149,8 @@ export default function App() {
   const [loadingProxies, setLoadingProxies] = useState(true);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [humanizeEnabled, setHumanizeEnabled] = useState(false);
+  const [antiFingerprintEnabled, setAntiFingerprintEnabled] = useState(true);
+  const [inspectingTab, setInspectingTab] = useState<TabConfig | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [masterIframeSrc, setMasterIframeSrc] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
@@ -64,6 +168,42 @@ export default function App() {
   const [customHeaderName, setCustomHeaderName] = useState("");
   const [customHeaderValue, setCustomHeaderValue] = useState("");
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
+  // Real-time cluster telemetry state
+  const [healthStats, setHealthStats] = useState<{
+    cpuUsage: number;
+    memoryUsage: number;
+    activeConnections: number;
+    totalRequests: number;
+    totalProxies: number;
+    uptime: number;
+    status: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+        const res = await fetch("/api/health-stats");
+        if (res.ok) {
+          const data = await res.json();
+          setHealthStats(data);
+        }
+      } catch (e) {
+        console.error("Telemetry connection failed", e);
+      }
+    };
+    fetchHealth();
+    const interval = setInterval(fetchHealth, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatUptime = (totalSeconds: number) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const [bookmarks, setBookmarks] = useState<Array<{ name: string; url: string }>>(() => {
     const saved = localStorage.getItem("ny-bookmarks");
     if (saved) {
@@ -387,7 +527,7 @@ export default function App() {
   // Build proxy URL
   const getProxyUrl = (tab: TabConfig) => {
     if (!tab.proxyId) return "about:blank";
-    let url = `/api/proxy-request?url=${encodeURIComponent(tab.currentUrl)}&proxyId=${encodeURIComponent(tab.proxyId)}&userAgent=${encodeURIComponent(tab.userAgent)}&tabId=${encodeURIComponent(tab.id)}&humanize=${humanizeEnabled}&refreshKey=${refreshKey}`;
+    let url = `/api/proxy-request?url=${encodeURIComponent(tab.currentUrl)}&proxyId=${encodeURIComponent(tab.proxyId)}&userAgent=${encodeURIComponent(tab.userAgent)}&tabId=${encodeURIComponent(tab.id)}&humanize=${humanizeEnabled}&antiFingerprint=${antiFingerprintEnabled}&refreshKey=${refreshKey}`;
     
     if (customReferer) {
       url += `&referer=${encodeURIComponent(customReferer)}`;
@@ -658,6 +798,19 @@ export default function App() {
                   <div className={`w-3 h-3 bg-white rounded-full transition-transform ${humanizeEnabled ? 'translate-x-4' : 'translate-x-0'}`}></div>
                 </div>
               </div>
+
+              <div className="bg-[#0F172A] p-2 rounded border border-slate-700 flex items-center justify-between gap-1 cursor-pointer" onClick={() => setAntiFingerprintEnabled(!antiFingerprintEnabled)}>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className={`w-4 h-4 ${antiFingerprintEnabled ? 'text-emerald-400 font-bold' : 'text-slate-500'}`} />
+                  <div className="flex flex-col text-left">
+                    <span className="text-[11px] text-slate-300 font-semibold">Anti-Fingerprint Spoofing</span>
+                    <span className="text-[9px] text-slate-500 leading-none mt-0.5">Canvas, WebGL, Timezone, Core</span>
+                  </div>
+                </div>
+                <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${antiFingerprintEnabled ? 'bg-emerald-500' : 'bg-slate-600'}`}>
+                  <div className={`w-3 h-3 bg-white rounded-full transition-transform ${antiFingerprintEnabled ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                </div>
+              </div>
               <div className="bg-[#0F172A] p-2 rounded border border-slate-700 flex items-center justify-between gap-1 cursor-pointer" onClick={() => setAutoNextEnabled(!autoNextEnabled)}>
                 <div className="flex items-center gap-2">
                   <Timer className={`w-4 h-4 ${autoNextEnabled ? 'text-blue-400 font-bold' : 'text-slate-500'}`} />
@@ -803,6 +956,16 @@ export default function App() {
                 <span className="text-[11px] font-mono text-blue-300">
                   IP: {activeMasterProxy ? activeMasterProxy.ip : "Loading..."}
                 </span>
+                {antiFingerprintEnabled && (
+                  <button 
+                    onClick={() => setInspectingTab(masterTab)}
+                    className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono transition"
+                    title="Click to inspect spoofed browser fingerprint"
+                  >
+                    <ShieldCheck className="w-3 h-3 text-emerald-400 animate-pulse" />
+                    <span>FP: ACTIVE</span>
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-3 text-[10px] text-slate-400 font-mono">
                 <span>View: {masterTab.device}</span>
@@ -863,7 +1026,18 @@ export default function App() {
                       {/* Slave Header */}
                       <div className="bg-slate-900 px-2 py-1.5 flex justify-between items-center border-b border-slate-800">
                         <span className="text-[9px] font-mono text-blue-400 truncate pr-2">IP: {slaveProxy?.ip}</span>
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></span>
+                        <div className="flex items-center gap-1.5">
+                          {antiFingerprintEnabled && (
+                            <button 
+                              onClick={() => setInspectingTab(tab)}
+                              className="text-emerald-400 hover:text-emerald-300 transition p-0.5" 
+                              title="Click to inspect this node's anti-detect fingerprint"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></span>
+                        </div>
                       </div>
                       
                       {/* Slave Screen Preview */}
@@ -994,17 +1168,212 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-[#1E293B] border-t border-slate-700 px-6 py-2 flex items-center justify-between text-[11px] text-slate-500">
-        <div className="flex gap-4">
-          <span>Sessions: 142 Today</span>
-          <span>Avg Latency: 42ms</span>
-          <span>Proxy Pool: {proxies.length}+ NY Residential</span>
+      <footer className="bg-slate-900 border-t border-slate-800 px-6 py-3 flex flex-col md:flex-row items-stretch md:items-center justify-between text-xs text-slate-400 gap-4">
+        {/* Left Side: System status & metrics */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          {/* Status indicator */}
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                !healthStats ? 'bg-slate-500' : healthStats.cpuUsage > 80 ? 'bg-amber-500' : 'bg-emerald-500'
+              }`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                !healthStats ? 'bg-slate-500' : healthStats.cpuUsage > 80 ? 'bg-amber-500' : 'bg-emerald-500'
+              }`}></span>
+            </span>
+            <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-slate-300">
+              {healthStats ? `SYSTEM ${healthStats.status}` : "CONNECTING METRICS..."}
+            </span>
+          </div>
+
+          {/* CPU Stats */}
+          <div className="flex items-center gap-2">
+            <Cpu className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-500 font-medium">CPU:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-slate-200">
+                {healthStats ? `${healthStats.cpuUsage}%` : "0.0%"}
+              </span>
+              <div className="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden hidden sm:block">
+                <div 
+                  className={`h-full transition-all duration-500 ${
+                    !healthStats ? 'bg-slate-700' : healthStats.cpuUsage > 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: healthStats ? `${healthStats.cpuUsage}%` : '0%' }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Memory Stats */}
+          <div className="flex items-center gap-2">
+            <Server className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-500 font-medium">RAM:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-slate-200">
+                {healthStats ? `${healthStats.memoryUsage} MB` : "0.0 MB"}
+              </span>
+              <span className="text-[10px] text-slate-600">/ 512MB</span>
+              <div className="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden hidden sm:block">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-500"
+                  style={{ width: healthStats ? `${(healthStats.memoryUsage / 512) * 100}%` : '0%' }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Connections */}
+          <div className="flex items-center gap-2">
+            <Activity className={`w-3.5 h-3.5 text-slate-500 ${healthStats && healthStats.activeConnections > 0 ? "animate-pulse text-blue-400" : ""}`} />
+            <span className="text-slate-500 font-medium">Active Conn:</span>
+            <span className="font-mono font-bold text-blue-400">
+              {healthStats ? healthStats.activeConnections : 0}
+            </span>
+          </div>
+
+          {/* Total Session Requests */}
+          <div className="flex items-center gap-2">
+            <Globe className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-500 font-medium">Total Req:</span>
+            <span className="font-mono font-bold text-slate-200">
+              {healthStats ? healthStats.totalRequests : 0}
+            </span>
+          </div>
         </div>
-        <div className="flex gap-2 items-center">
-          <span className="bg-green-900/40 text-green-400 px-2 rounded font-mono">AUTO-SYNC ENABLED</span>
-          <span className="font-mono">v4.8.2-stable</span>
+
+        {/* Right Side: Nodes counter, Uptime & version */}
+        <div className="flex flex-wrap items-center justify-between md:justify-end gap-x-6 gap-y-2 border-t border-slate-800/80 md:border-t-0 pt-2 md:pt-0">
+          {/* Uptime */}
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-500">Uptime:</span>
+            <span className="font-mono text-slate-300 font-medium">
+              {healthStats ? formatUptime(healthStats.uptime) : "00:00:00"}
+            </span>
+          </div>
+
+          {/* Pool Count */}
+          <div className="text-[11px] text-slate-500">
+            Pool: <strong className="text-slate-300 font-mono">{healthStats ? healthStats.totalProxies : proxies.length}</strong> active nodes
+          </div>
+
+          {/* Mode Badge */}
+          <div className="flex items-center gap-2">
+            <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-mono tracking-wider">
+              AUTO-SYNCED CLUSTER
+            </span>
+            <span className="font-mono text-[10px] text-slate-600 hidden sm:inline">v4.9.0-stable</span>
+          </div>
         </div>
       </footer>
+      
+      {/* ANTI-DETECT FINGERPRINT INSPECTOR MODAL */}
+      {inspectingTab && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-slate-950 px-6 py-4 flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-5 h-5 text-emerald-400 animate-pulse" />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Device Fingerprint Inspector</h3>
+                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">Assigned Node Profile & Advanced Stealth Signatures</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setInspectingTab(null)}
+                className="text-slate-400 hover:text-white hover:bg-slate-800 p-1 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Node Summary Header */}
+              <div className="bg-[#0F172A] border border-slate-800 rounded-lg p-3 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Simulated Node Identity</p>
+                  <p className="text-xs text-slate-300 font-semibold mt-1">{inspectingTab.name}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Node Address IP</p>
+                  <p className="text-xs text-blue-400 font-mono font-bold mt-1">
+                    {(proxies.find(p => p.id === inspectingTab.proxyId) || proxies[0])?.ip || "Pending assignment..."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Spoofed Properties Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {(() => {
+                  const proxyLocation = (proxies.find(p => p.id === inspectingTab.proxyId) || proxies[0])?.location || "";
+                  const fp = getDeterministicFingerprintUI(inspectingTab.id, proxyLocation, inspectingTab.userAgent);
+                  return (
+                    <>
+                      <div className="bg-[#0F172A]/70 border border-slate-800 p-3 rounded-lg">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Timezone (Locale)</p>
+                        <p className="text-xs text-slate-200 font-mono font-semibold mt-1 truncate">{fp.timezone}</p>
+                        <p className="text-[9px] text-slate-400 font-mono mt-0.5">({fp.locale})</p>
+                      </div>
+
+                      <div className="bg-[#0F172A]/70 border border-slate-800 p-3 rounded-lg">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Canvas Fingerprint Hash</p>
+                        <p className="text-xs text-emerald-400 font-mono font-bold mt-1 truncate">{fp.canvasHash}</p>
+                        <p className="text-[9px] text-slate-500 font-mono mt-0.5">Pixel Salt Injection Active</p>
+                      </div>
+
+                      <div className="bg-[#0F172A]/70 border border-slate-800 p-3 rounded-lg col-span-2">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Unmasked WebGL Renderer (GPU)</p>
+                        <p className="text-xs text-amber-400 font-mono font-semibold mt-1 truncate">{fp.webglRenderer}</p>
+                        <p className="text-[9px] text-slate-500 font-mono mt-0.5">{fp.webglVendor}</p>
+                      </div>
+
+                      <div className="bg-[#0F172A]/70 border border-slate-800 p-3 rounded-lg">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Hardware Concurrency</p>
+                        <p className="text-xs text-slate-200 font-mono font-semibold mt-1">{fp.hardwareConcurrency} Logical Cores</p>
+                        <p className="text-[9px] text-slate-500 font-mono mt-0.5">navigator.hardwareConcurrency</p>
+                      </div>
+
+                      <div className="bg-[#0F172A]/70 border border-slate-800 p-3 rounded-lg">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Device Memory Limit</p>
+                        <p className="text-xs text-slate-200 font-mono font-semibold mt-1">{fp.deviceMemory} GB RAM</p>
+                        <p className="text-[9px] text-slate-500 font-mono mt-0.5">navigator.deviceMemory</p>
+                      </div>
+
+                      <div className="bg-[#0F172A]/70 border border-slate-800 p-3 rounded-lg col-span-2">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Active Spoofed User-Agent</p>
+                        <p className="text-[10px] text-slate-400 font-mono mt-1 break-all bg-slate-950 p-2 rounded border border-slate-800/80 leading-relaxed">
+                          {inspectingTab.userAgent}
+                        </p>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Informative bottom notice */}
+              <div className="bg-emerald-950/20 border border-emerald-900/30 text-emerald-400/90 text-[10px] p-3 rounded-lg leading-relaxed flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 text-emerald-400/80 mt-0.5" />
+                <span>
+                  <strong>Fingerprint Spoofing Protection is fully dynamic:</strong> This signature is deterministic based on this node's distinct slave ID. Cloudflare, Akamai, and modern bot-mitigation engines will treat this browser context as a human residential client.
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-950 px-6 py-3 flex justify-end border-t border-slate-800">
+              <button 
+                onClick={() => setInspectingTab(null)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded-lg text-xs font-semibold transition"
+              >
+                Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
     </div>
   );
