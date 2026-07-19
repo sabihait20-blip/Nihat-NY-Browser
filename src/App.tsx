@@ -4,8 +4,27 @@ import { ProxyConfig, TabConfig, DevicePreset } from "./types";
 
 const DEVICE_PRESETS: DevicePreset[] = [
   { name: "iPhone 15 Pro", userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", width: 393, height: 852, icon: "apple" },
+  { name: "iPhone 15 Pro Max", userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", width: 430, height: 932, icon: "apple" },
+  { name: "iPhone 14 Plus", userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1", width: 428, height: 926, icon: "apple" },
+  { name: "Samsung Galaxy S24 Ultra", userAgent: "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36", width: 385, height: 854, icon: "android" },
   { name: "Samsung Galaxy S23", userAgent: "Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36", width: 360, height: 780, icon: "android" },
+  { name: "Samsung Galaxy Z Fold 5", userAgent: "Mozilla/5.0 (Linux; Android 13; SM-F946B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36", width: 726, height: 800, icon: "android" },
   { name: "Google Pixel 8 Pro", userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Mobile Safari/537.36", width: 412, height: 892, icon: "pixel" },
+  { name: "Google Pixel Fold", userAgent: "Mozilla/5.0 (Linux; Android 13; Pixel Fold) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36", width: 840, height: 580, icon: "pixel" },
+  { name: "OnePlus 12", userAgent: "Mozilla/5.0 (Linux; Android 14; CPH2581) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36", width: 382, height: 853, icon: "android" },
+  { name: "Xiaomi 14 Pro", userAgent: "Mozilla/5.0 (Linux; Android 14; 23116PN5BC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36", width: 393, height: 873, icon: "android" },
+  { name: "Huawei Mate 60 Pro", userAgent: "Mozilla/5.0 (Linux; Android 12; ALN-AL00 Build/HUAWEIALN-AL00) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.88 Mobile Safari/537.36", width: 415, height: 905, icon: "android" },
+  { name: "Nothing Phone (2)", userAgent: "Mozilla/5.0 (Linux; Android 13; A065) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36", width: 393, height: 857, icon: "android" },
+  { name: "Sony Xperia 1 VI", userAgent: "Mozilla/5.0 (Linux; Android 14; XQ-EC54) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36", width: 390, height: 865, icon: "android" },
+  { name: "Oppo Find X7 Ultra", userAgent: "Mozilla/5.0 (Linux; Android 14; PHY110) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36", width: 393, height: 873, icon: "android" },
+  { name: "Vivo X100 Pro", userAgent: "Mozilla/5.0 (Linux; Android 14; V2324A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36", width: 393, height: 873, icon: "android" },
+  { name: "Motorola Edge 50 Ultra", userAgent: "Mozilla/5.0 (Linux; Android 14; XT2401-1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36", width: 393, height: 869, icon: "android" },
+  { name: "iPad Pro 11-inch", userAgent: "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", width: 834, height: 1194, icon: "apple" },
+  { name: "Samsung Galaxy Tab S9", userAgent: "Mozilla/5.0 (Linux; Android 13; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36", width: 800, height: 1280, icon: "android" },
+  { name: "Realme GT5 Pro", userAgent: "Mozilla/5.0 (Linux; Android 14; RMX3888) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36", width: 393, height: 873, icon: "android" },
+  { name: "Asus ROG Phone 8", userAgent: "Mozilla/5.0 (Linux; Android 14; AI2401) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36", width: 395, height: 878, icon: "android" },
+  { name: "Redmi Note 13 Pro+", userAgent: "Mozilla/5.0 (Linux; Android 13; 23090RA98G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36", width: 393, height: 871, icon: "android" },
+  { name: "Nokia XR21", userAgent: "Mozilla/5.0 (Linux; Android 13; Nokia XR21) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36", width: 360, height: 800, icon: "android" },
   { name: "Desktop Chrome", userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", width: 1280, height: 800, icon: "desktop" }
 ];
 
@@ -37,6 +56,28 @@ export default function App() {
   const [autoNextEnabled, setAutoNextEnabled] = useState(false);
   const [timerProgress, setTimerProgress] = useState(0);
 
+  // Advanced feature state variables
+  const [autoScrollSpeed, setAutoScrollSpeed] = useState<'off' | 'slow' | 'medium' | 'fast'>('off');
+  const [scrollPct, setScrollPct] = useState(0);
+  const [proxyProfile, setProxyProfile] = useState<string>('all');
+  const [customReferer, setCustomReferer] = useState("https://google.com");
+  const [customHeaderName, setCustomHeaderName] = useState("");
+  const [customHeaderValue, setCustomHeaderValue] = useState("");
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [bookmarks, setBookmarks] = useState<Array<{ name: string; url: string }>>(() => {
+    const saved = localStorage.getItem("ny-bookmarks");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      { name: "Hello Sribordi", url: "https://www.hellosribordi.top/" },
+      { name: "Wikipedia Main", url: "https://en.wikipedia.org/wiki/Main_Page" },
+      { name: "Example Domain", url: "https://example.com/" }
+    ];
+  });
+
   // Load Proxies
   useEffect(() => {
     fetch("/api/proxies")
@@ -54,7 +95,7 @@ export default function App() {
           const initialSlaves: TabConfig[] = [];
           for (let i = 1; i <= 12; i++) {
             const proxy = data[i % data.length];
-            const preset = DEVICE_PRESETS[i % 3];
+            const preset = DEVICE_PRESETS[i % (DEVICE_PRESETS.length - 1)];
             initialSlaves.push({
               id: `slave-${i}`,
               name: `Node 0${i}`,
@@ -145,20 +186,22 @@ export default function App() {
 
     const intervalTime = 100; // Update progress bar every 100ms for a buttery-smooth transition
     const totalTime = 10000;  // 10 seconds total duration
-    const increment = (intervalTime / totalTime) * 100;
+    let elapsed = 0;
 
     const interval = setInterval(() => {
-      setTimerProgress(prev => {
-        if (prev >= 100) {
-          setCurrentPage(currentPagePrev => {
-            const maxPage = Math.ceil(tabs.length / itemsPerPage);
-            if (maxPage <= 1) return 1;
-            return currentPagePrev >= maxPage ? 1 : currentPagePrev + 1;
-          });
-          return 100; // It will immediately reset to 0 upon effect rerun
-        }
-        return prev + increment;
-      });
+      elapsed += intervalTime;
+      const progress = Math.min((elapsed / totalTime) * 100, 100);
+      setTimerProgress(progress);
+
+      if (elapsed >= totalTime) {
+        setCurrentPage(currentPagePrev => {
+          const maxPage = Math.ceil(tabs.length / itemsPerPage);
+          if (maxPage <= 1) return 1;
+          return currentPagePrev >= maxPage ? 1 : currentPagePrev + 1;
+        });
+        elapsed = 0;
+        setTimerProgress(0);
+      }
     }, intervalTime);
 
     return () => clearInterval(interval);
@@ -169,7 +212,45 @@ export default function App() {
     if (masterTab.proxyId) {
       setMasterIframeSrc(getProxyUrl(masterTab));
     }
-  }, [masterTab.proxyId, masterTab.userAgent, masterTab.device, humanizeEnabled, refreshKey]);
+  }, [masterTab.proxyId, masterTab.userAgent, masterTab.device, humanizeEnabled, refreshKey, customReferer, customHeaderName, customHeaderValue]);
+
+  // Auto-Scroll Interval broadcast to Master and visible Slave nodes
+  useEffect(() => {
+    if (autoScrollSpeed === 'off') {
+      setScrollPct(0);
+      return;
+    }
+
+    const intervalTime = 150;
+    let step = 0.0015; // slow
+    if (autoScrollSpeed === 'medium') step = 0.004;
+    if (autoScrollSpeed === 'fast') step = 0.009;
+
+    const interval = setInterval(() => {
+      setScrollPct(prev => {
+        const next = prev >= 1 ? 0 : prev + step;
+
+        // Broadcast to master
+        const masterIframe = document.getElementById("iframe-master") as HTMLIFrameElement;
+        if (masterIframe && masterIframe.contentWindow) {
+          masterIframe.contentWindow.postMessage({ type: 'EXEC_SYNC', action: 'scroll', data: { pct: next } }, '*');
+        }
+
+        // Broadcast to currently visible slaves to maximize performance
+        const visibleSlaves = tabs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+        visibleSlaves.forEach(slave => {
+          const iframe = document.getElementById(`iframe-${slave.id}`) as HTMLIFrameElement;
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ type: 'EXEC_SYNC', action: 'scroll', data: { pct: next } }, '*');
+          }
+        });
+
+        return next;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(interval);
+  }, [autoScrollSpeed, tabs, currentPage]);
 
   // Backup polling check using same-origin access to handle javascript-based / dynamic redirects
   useEffect(() => {
@@ -260,7 +341,7 @@ export default function App() {
         const globalIdx = tabs.length + i;
         const nextIdx = globalIdx + 1;
         const proxy = proxies[nextIdx % proxies.length];
-        const preset = DEVICE_PRESETS[nextIdx % 3];
+        const preset = DEVICE_PRESETS[nextIdx % (DEVICE_PRESETS.length - 1)];
         additionalTabs.push({
           id: `slave-${baseId}-${globalIdx}`,
           name: `Node ${nextIdx.toString().padStart(2, '0')}`,
@@ -306,7 +387,103 @@ export default function App() {
   // Build proxy URL
   const getProxyUrl = (tab: TabConfig) => {
     if (!tab.proxyId) return "about:blank";
-    return `/api/proxy-request?url=${encodeURIComponent(tab.currentUrl)}&proxyId=${encodeURIComponent(tab.proxyId)}&userAgent=${encodeURIComponent(tab.userAgent)}&tabId=${encodeURIComponent(tab.id)}&humanize=${humanizeEnabled}&refreshKey=${refreshKey}`;
+    let url = `/api/proxy-request?url=${encodeURIComponent(tab.currentUrl)}&proxyId=${encodeURIComponent(tab.proxyId)}&userAgent=${encodeURIComponent(tab.userAgent)}&tabId=${encodeURIComponent(tab.id)}&humanize=${humanizeEnabled}&refreshKey=${refreshKey}`;
+    
+    if (customReferer) {
+      url += `&referer=${encodeURIComponent(customReferer)}`;
+    }
+    if (customHeaderName && customHeaderValue) {
+      url += `&customHeaderName=${encodeURIComponent(customHeaderName)}&customHeaderValue=${encodeURIComponent(customHeaderValue)}`;
+    }
+    return url;
+  };
+
+  // Add current page to Bookmarks
+  const handleAddBookmark = () => {
+    const isAlreadyBookmarked = bookmarks.some(b => b.url === inputUrl);
+    if (isAlreadyBookmarked) {
+      handleDeleteBookmark(inputUrl);
+    } else {
+      let name = "Custom Site";
+      try {
+        const urlObj = new URL(inputUrl);
+        name = urlObj.hostname.replace('www.', '');
+      } catch (e) {}
+      
+      const newBookmarks = [...bookmarks, { name, url: inputUrl }];
+      setBookmarks(newBookmarks);
+      localStorage.setItem("ny-bookmarks", JSON.stringify(newBookmarks));
+    }
+  };
+
+  const handleDeleteBookmark = (url: string) => {
+    const filtered = bookmarks.filter(b => b.url !== url);
+    setBookmarks(filtered);
+    localStorage.setItem("ny-bookmarks", JSON.stringify(filtered));
+  };
+
+  const handleDeployBookmark = (url: string) => {
+    setInputUrl(url);
+    const newHistory = [...masterTab.history.slice(0, historyIndex + 1), url];
+    setHistoryIndex(newHistory.length - 1);
+    
+    const updatedMaster = { ...masterTab, currentUrl: url, history: newHistory };
+    setMasterTab(updatedMaster);
+    setTabs(prev => prev.map(t => ({ ...t, currentUrl: url, history: [...t.history.slice(0, historyIndex + 1), url] })));
+    setMasterIframeSrc(getProxyUrl(updatedMaster));
+  };
+
+  // Apply Node Routing Profile filters instantly
+  const handleApplyProxyProfile = (profile: string) => {
+    setProxyProfile(profile);
+    
+    let filtered = [...proxies];
+    if (profile === 'low-latency') {
+      filtered = proxies.filter(p => p.latency && p.latency < 50);
+    } else if (profile === 'verizon') {
+      filtered = proxies.filter(p => p.isp.toLowerCase().includes('verizon'));
+    } else if (profile === 'spectrum') {
+      filtered = proxies.filter(p => p.isp.toLowerCase().includes('spectrum'));
+    } else if (profile === 'optimum') {
+      filtered = proxies.filter(p => p.isp.toLowerCase().includes('optimum'));
+    } else if (profile === 'mobile-only') {
+      filtered = proxies.filter(p => 
+        p.isp.toLowerCase().includes('4g') || 
+        p.isp.toLowerCase().includes('5g') || 
+        p.isp.toLowerCase().includes('mobile') || 
+        p.isp.toLowerCase().includes('wireless') || 
+        p.isp.toLowerCase().includes('cellular')
+      );
+    } else if (profile === 'bangladesh') {
+      filtered = proxies.filter(p => p.location.toLowerCase().includes('bangladesh'));
+    } else if (profile === 'usa') {
+      filtered = proxies.filter(p => p.location.toLowerCase().includes('usa') || p.location.toLowerCase().includes('ny') || p.location.toLowerCase().includes('ca') || p.location.toLowerCase().includes('il'));
+    } else if (profile === 'uk-europe') {
+      filtered = proxies.filter(p => p.location.toLowerCase().includes('uk') || p.location.toLowerCase().includes('germany') || p.location.toLowerCase().includes('france'));
+    } else if (profile === 'asia') {
+      filtered = proxies.filter(p => p.location.toLowerCase().includes('india') || p.location.toLowerCase().includes('japan') || p.location.toLowerCase().includes('singapore') || p.location.toLowerCase().includes('malaysia'));
+    }
+    
+    if (filtered.length === 0) filtered = [proxies[0]];
+
+    // Choose valid proxy ID for master
+    const currentMasterInFiltered = filtered.find(p => p.id === masterTab.proxyId);
+    let newMasterProxyId = masterTab.proxyId;
+    if (!currentMasterInFiltered) {
+      newMasterProxyId = filtered[0].id;
+      setMasterTab(prev => ({ ...prev, proxyId: filtered[0].id }));
+    }
+
+    // Provision all tabs to matching route pool
+    setTabs(prev => prev.map((tab, idx) => {
+      const matchProxy = filtered[idx % filtered.length];
+      return {
+        ...tab,
+        proxyId: matchProxy.id
+      };
+    }));
+
+    setRefreshKey(prev => prev + 1);
   };
 
   const activeMasterProxy = proxies.find(p => p.id === masterTab.proxyId);
@@ -353,8 +530,17 @@ export default function App() {
                 value={inputUrl}
                 onChange={e => setInputUrl(e.target.value)}
               />
-              <button type="button" className="absolute right-2 top-2.5 text-slate-500 hover:text-yellow-400" title="Bookmark">
-                <Bookmark className="w-4 h-4" />
+              <button 
+                type="button" 
+                onClick={handleAddBookmark}
+                className={`absolute right-2 top-2.5 transition-colors ${
+                  bookmarks.some(b => b.url === inputUrl) 
+                    ? 'text-yellow-400 hover:text-yellow-500' 
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+                title="Bookmark Current URL"
+              >
+                <Bookmark className="w-4 h-4 fill-current" />
               </button>
             </div>
             <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2.5 rounded-md text-sm font-semibold whitespace-nowrap shadow-md transition-colors flex items-center justify-center gap-2" title="Navigate Master node to URL">
@@ -422,6 +608,47 @@ export default function App() {
                   ))}
                 </select>
               </div>
+
+              {/* Node Router ISP & Latency Profiles */}
+              <div className="bg-[#0F172A] p-2 rounded border border-slate-700 flex flex-col gap-1">
+                <label className="text-[10px] uppercase text-slate-500 flex items-center gap-1">
+                  <Globe className="w-3 h-3 text-blue-400" /> Router Route Profile
+                </label>
+                <select 
+                  className="bg-transparent text-xs text-blue-400 font-mono focus:outline-none w-full"
+                  value={proxyProfile}
+                  onChange={(e) => handleApplyProxyProfile(e.target.value)}
+                >
+                  <option value="all" className="bg-slate-900 text-slate-200">All Proxies (Full Pool)</option>
+                  <option value="low-latency" className="bg-slate-900 text-slate-200">Fastest Only (&lt;50ms)</option>
+                  <option value="mobile-only" className="bg-slate-900 text-slate-200">🌐 Global Mobile 4G/5G Only</option>
+                  <option value="bangladesh" className="bg-slate-900 text-slate-200">🇧🇩 Bangladesh Mobile Only</option>
+                  <option value="usa" className="bg-slate-900 text-slate-200">🇺🇸 USA Networks Only</option>
+                  <option value="uk-europe" className="bg-slate-900 text-slate-200">🇪🇺 Europe / UK Only</option>
+                  <option value="asia" className="bg-slate-900 text-slate-200">🌏 Other Asia Networks Only</option>
+                  <option value="verizon" className="bg-slate-900 text-slate-200">ISP: Verizon Fios Only</option>
+                  <option value="spectrum" className="bg-slate-900 text-slate-200">ISP: Spectrum Only</option>
+                  <option value="optimum" className="bg-slate-900 text-slate-200">ISP: Optimum Only</option>
+                </select>
+              </div>
+
+              {/* Auto Scroll Controller */}
+              <div className="bg-[#0F172A] p-2 rounded border border-slate-700 flex flex-col gap-1">
+                <label className="text-[10px] uppercase text-slate-500 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-blue-400" /> Auto-Scroll Feed
+                </label>
+                <select 
+                  className="bg-transparent text-xs text-blue-400 font-mono focus:outline-none w-full"
+                  value={autoScrollSpeed}
+                  onChange={(e) => setAutoScrollSpeed(e.target.value as any)}
+                >
+                  <option value="off" className="bg-slate-900 text-slate-200">Scroll: Disabled</option>
+                  <option value="slow" className="bg-slate-900 text-slate-200">Slow (10px/s)</option>
+                  <option value="medium" className="bg-slate-900 text-slate-200">Medium (40px/s)</option>
+                  <option value="fast" className="bg-slate-900 text-slate-200">Fast (100px/s)</option>
+                </select>
+              </div>
+
               <div className="bg-[#0F172A] p-2 rounded border border-slate-700 flex items-center justify-between gap-1 cursor-pointer" onClick={() => setHumanizeEnabled(!humanizeEnabled)}>
                 <div className="flex items-center gap-2">
                   <Activity className={`w-4 h-4 ${humanizeEnabled ? 'text-green-400' : 'text-slate-500'}`} />
@@ -440,6 +667,86 @@ export default function App() {
                   <div className={`w-3 h-3 bg-white rounded-full transition-transform ${autoNextEnabled ? 'translate-x-4' : 'translate-x-0'}`}></div>
                 </div>
               </div>
+
+              {/* Advanced HTTP spoofing */}
+              <div className="border border-slate-700/60 rounded overflow-hidden">
+                <button 
+                  type="button"
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                  className="w-full bg-[#0F172A] p-2 text-[10px] uppercase text-slate-400 font-bold flex items-center justify-between hover:text-white transition"
+                >
+                  <span>Advanced HTTP Spoofing</span>
+                  <Settings className={`w-3.5 h-3.5 text-blue-400 transition-transform ${showAdvancedSettings ? 'rotate-90' : ''}`} />
+                </button>
+                {showAdvancedSettings && (
+                  <div className="bg-[#111A2E] p-3 border-t border-slate-700/50 space-y-2.5">
+                    <div className="flex flex-col gap-1 text-[10px]">
+                      <span className="text-slate-500 uppercase">HTTP Referer Spoofing</span>
+                      <input 
+                        type="text"
+                        className="bg-[#0F172A] border border-slate-700 text-xs font-mono text-slate-300 p-1.5 rounded focus:outline-none focus:border-blue-500 w-full"
+                        value={customReferer}
+                        onChange={(e) => setCustomReferer(e.target.value)}
+                        placeholder="e.g. https://twitter.com"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 text-[10px]">
+                      <span className="text-slate-500 uppercase">Custom Header Name</span>
+                      <input 
+                        type="text"
+                        className="bg-[#0F172A] border border-slate-700 text-xs font-mono text-slate-300 p-1.5 rounded focus:outline-none focus:border-blue-500 w-full"
+                        value={customHeaderName}
+                        onChange={(e) => setCustomHeaderName(e.target.value)}
+                        placeholder="e.g. X-Campaign-Id"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 text-[10px]">
+                      <span className="text-slate-500 uppercase">Custom Header Value</span>
+                      <input 
+                        type="text"
+                        className="bg-[#0F172A] border border-slate-700 text-xs font-mono text-slate-300 p-1.5 rounded focus:outline-none focus:border-blue-500 w-full"
+                        value={customHeaderValue}
+                        onChange={(e) => setCustomHeaderValue(e.target.value)}
+                        placeholder="e.g. tracking_active"
+                      />
+                    </div>
+                    <p className="text-[9px] text-slate-500">Note: Headers are injected on target page download dynamically by our NY proxy routing layer.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* QUICK DEPLOY BOOKMARKS */}
+          <section>
+            <h3 className="text-xs font-bold uppercase text-slate-500 mb-2 flex items-center gap-2">
+              <Bookmark className="w-4 h-4 text-blue-400" />
+              Quick Deploy Bookmarks
+            </h3>
+            <div className="bg-[#0F172A] border border-slate-700/60 rounded-md p-2 space-y-1 max-h-40 overflow-y-auto">
+              {bookmarks.map((bookmark, idx) => (
+                <div key={idx} className="flex items-center justify-between gap-1 group text-xs py-1 hover:bg-slate-800 px-1.5 rounded transition">
+                  <button
+                    type="button"
+                    onClick={() => handleDeployBookmark(bookmark.url)}
+                    className="flex-1 text-left text-blue-400 hover:text-blue-300 font-medium truncate pr-1"
+                    title={bookmark.url}
+                  >
+                    ⭐ {bookmark.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteBookmark(bookmark.url)}
+                    className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
+                    title="Remove Bookmark"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              {bookmarks.length === 0 && (
+                <p className="text-[10px] text-slate-500 text-center py-2">No bookmarks saved yet.</p>
+              )}
             </div>
           </section>
           

@@ -81,23 +81,73 @@ let nyProxies = [
   }
 ];
 
-// Generate 100 additional mock NY proxies
-const isps = ["Verizon Fios", "Spectrum", "Optimum Online", "Comcast Business", "AT&T", "T-Mobile Home Internet"];
-const locations = ["New York, NY", "Brooklyn, NY", "Manhattan, NY", "Queens, NY", "Bronx, NY", "Staten Island, NY", "Yonkers, NY", "Syracuse, NY"];
+// Generate 250 additional mock global proxies including mobile carriers with mobile IPs
+const carriersList = [
+  { country: "Bangladesh", location: "Dhaka", isp: "Grameenphone 4G LTE", ipPrefix: "37.111" },
+  { country: "Bangladesh", location: "Chittagong", isp: "Robi Axiata 4G", ipPrefix: "103.230" },
+  { country: "Bangladesh", location: "Sylhet", isp: "Banglalink 4G", ipPrefix: "203.112" },
+  { country: "Bangladesh", location: "Dhaka", isp: "Teletalk 5G", ipPrefix: "103.242" },
+  { country: "USA", location: "New York, NY", isp: "Verizon Wireless 5G", ipPrefix: "172.56" },
+  { country: "USA", location: "Los Angeles, CA", isp: "AT&T Mobility 5G", ipPrefix: "166.137" },
+  { country: "USA", location: "Chicago, IL", isp: "T-Mobile US 5G", ipPrefix: "172.58" },
+  { country: "UK", location: "London", isp: "EE Mobile 5G", ipPrefix: "82.132" },
+  { country: "UK", location: "Manchester", isp: "Vodafone UK LTE", ipPrefix: "94.197" },
+  { country: "UK", location: "Birmingham", isp: "O2 UK 4G", ipPrefix: "109.155" },
+  { country: "India", location: "Mumbai", isp: "Reliance Jio 5G", ipPrefix: "157.44" },
+  { country: "India", location: "Delhi", isp: "Airtel India 5G", ipPrefix: "223.225" },
+  { country: "India", location: "Kolkata", isp: "Vi India 4G", ipPrefix: "103.241" },
+  { country: "Canada", location: "Toronto", isp: "Rogers Wireless 5G", ipPrefix: "174.112" },
+  { country: "Canada", location: "Vancouver", isp: "Bell Mobility LTE", ipPrefix: "184.150" },
+  { country: "Germany", location: "Berlin", isp: "Telekom.de 5G", ipPrefix: "80.187" },
+  { country: "Germany", location: "Munich", isp: "Vodafone.de LTE", ipPrefix: "109.40" },
+  { country: "Japan", location: "Tokyo", isp: "NTT Docomo 5G", ipPrefix: "110.163" },
+  { country: "Japan", location: "Osaka", isp: "SoftBank Mobile LTE", ipPrefix: "126.142" },
+  { country: "Australia", location: "Sydney", isp: "Telstra Mobile 5G", ipPrefix: "101.191" },
+  { country: "Australia", location: "Melbourne", isp: "Optus Mobile LTE", ipPrefix: "120.150" },
+  { country: "Singapore", location: "Singapore", isp: "Singtel Mobile 5G", ipPrefix: "116.88" },
+  { country: "Singapore", location: "Singapore", isp: "StarHub Mobile 4G", ipPrefix: "183.90" },
+  { country: "France", location: "Paris", isp: "Orange France 5G", ipPrefix: "90.84" },
+  { country: "France", location: "Lyon", isp: "SFR Mobile LTE", ipPrefix: "176.128" },
+  { country: "UAE", location: "Dubai", isp: "Etisalat 5G Network", ipPrefix: "194.170" },
+  { country: "Saudi Arabia", location: "Riyadh", isp: "STC 5G Mobile", ipPrefix: "212.118" },
+  { country: "Brazil", location: "Sao Paulo", isp: "Vivo Mobile 5G", ipPrefix: "177.126" },
+  { country: "Malaysia", location: "Kuala Lumpur", isp: "CelcomDigi 5G Network", ipPrefix: "115.135" }
+];
+
+const generalIsps = ["Verizon Fios", "Spectrum", "Optimum Online", "Comcast Business", "AT&T", "T-Mobile Home Internet"];
+const generalLocations = ["New York, NY", "Brooklyn, NY", "Manhattan, NY", "Queens, NY", "Bronx, NY", "Staten Island, NY", "Yonkers, NY", "Syracuse, NY"];
 const types: ("HTTP" | "HTTPS" | "SOCKS5")[] = ["HTTP", "HTTPS", "SOCKS5"];
 
-for (let i = 6; i <= 105; i++) {
-  const ip = `104.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+for (let i = 6; i <= 255; i++) {
+  const isMobile = i % 2 === 0;
+  let ip = "";
+  let location = "";
+  let isp = "";
+  let name = "";
+
+  if (isMobile) {
+    const carrier = carriersList[i % carriersList.length];
+    ip = `${carrier.ipPrefix}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}`;
+    location = `${carrier.location}, ${carrier.country}`;
+    isp = carrier.isp;
+    name = `Mobile Node ${i} (${carrier.country})`;
+  } else {
+    ip = `104.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+    location = generalLocations[Math.floor(Math.random() * generalLocations.length)];
+    isp = generalIsps[Math.floor(Math.random() * generalIsps.length)];
+    name = `NY Node ${i} (${location})`;
+  }
+
   nyProxies.push({
     id: `ny-res-${i}`,
-    name: `NY Node ${i} (${locations[Math.floor(Math.random() * locations.length)]})`,
+    name: name,
     ip: ip,
     port: [8080, 3128, 8888, 1080, 8000][Math.floor(Math.random() * 5)],
     type: types[Math.floor(Math.random() * types.length)],
-    location: locations[Math.floor(Math.random() * locations.length)],
-    isp: isps[Math.floor(Math.random() * isps.length)],
+    location: location,
+    isp: isp,
     status: "active",
-    latency: Math.floor(Math.random() * 100) + 20,
+    latency: Math.floor(Math.random() * 60) + 10,
     username: "",
     password: ""
   });
@@ -187,6 +237,9 @@ app.get("/api/proxy-request", async (req, res) => {
   const proxyId = req.query.proxyId as string;
   const userAgent = req.query.userAgent as string;
   const humanize = req.query.humanize === 'true';
+  const referer = req.query.referer as string;
+  const customHeaderName = req.query.customHeaderName as string;
+  const customHeaderValue = req.query.customHeaderValue as string;
 
   if (!targetUrlStr) {
     return res.status(400).send("Target URL is required.");
@@ -220,6 +273,13 @@ app.get("/api/proxy-request", async (req, res) => {
       timeout: 8000,
       validateStatus: () => true
     };
+
+    if (referer) {
+      config.headers["Referer"] = referer;
+    }
+    if (customHeaderName && customHeaderValue) {
+      config.headers[customHeaderName] = customHeaderValue;
+    }
 
     // If it is a real custom proxy (not pre-configured dummy proxies), apply proxy agent
     const isRealProxy = selectedProxy && !selectedProxy.id.startsWith("ny-res-");
