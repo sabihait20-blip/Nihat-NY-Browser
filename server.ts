@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = 3000;
 
 app.use(express.json());
@@ -837,4 +837,7 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only run the standalone listener if we are not running as a Vercel serverless function
+if (typeof process !== "undefined" && !process.env.VERCEL) {
+  startServer();
+}
