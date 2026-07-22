@@ -184,19 +184,30 @@ export default function App() {
   } | null>(null);
 
   useEffect(() => {
+    let consecutiveFailures = 0;
     const fetchHealth = async () => {
       try {
         const res = await fetch("/api/health-stats");
         if (res.ok) {
           const data = await res.json();
           setHealthStats(data);
+          consecutiveFailures = 0;
+        } else {
+          consecutiveFailures++;
+          if (consecutiveFailures > 5) {
+            console.warn("Telemetry endpoint returned non-OK status:", res.status);
+          }
         }
       } catch (e) {
-        console.error("Telemetry connection failed", e);
+        consecutiveFailures++;
+        // Avoid noisy console.error for transient/offline errors during dev reboots
+        if (consecutiveFailures > 5) {
+          console.warn("Telemetry connection failed (consecutive failures):", e);
+        }
       }
     };
     fetchHealth();
-    const interval = setInterval(fetchHealth, 1500);
+    const interval = setInterval(fetchHealth, 2000);
     return () => clearInterval(interval);
   }, []);
 
