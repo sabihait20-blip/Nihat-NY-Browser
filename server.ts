@@ -12,110 +12,137 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// List of high-quality New York Proxy servers and simulation IPs
+// List of high-quality European Proxy servers and simulation IPs
 let nyProxies = [
   {
-    id: "ny-res-1",
-    name: "NY City Residential (Maniac Net)",
-    ip: "198.51.100.45",
+    id: "eu-res-1",
+    name: "London Residential (BT Fibre)",
+    ip: "82.132.34.112",
     port: 8080,
     type: "HTTP" as const,
-    location: "New York, NY",
-    isp: "Verizon Fios",
+    location: "London, UK",
+    isp: "BT Broadband",
     status: "active" as const,
-    latency: 45,
+    latency: 18,
     username: "",
     password: ""
   },
   {
-    id: "ny-res-2",
-    name: "Brooklyn High-Speed (BK-Net)",
-    ip: "172.56.21.112",
+    id: "eu-res-2",
+    name: "Frankfurt High-Speed (Deutsche Telekom)",
+    ip: "80.187.91.43",
     port: 3128,
     type: "HTTP" as const,
-    location: "Brooklyn, NY",
-    isp: "Spectrum",
+    location: "Frankfurt, Germany",
+    isp: "Deutsche Telekom",
     status: "active" as const,
-    latency: 58,
+    latency: 22,
     username: "",
     password: ""
   },
   {
-    id: "ny-res-3",
-    name: "Manhattan Business Hub",
-    ip: "206.189.190.12",
+    id: "eu-res-3",
+    name: "Paris Business Hub (Orange)",
+    ip: "90.84.12.215",
     port: 8888,
     type: "HTTPS" as const,
-    location: "Manhattan, NY",
-    isp: "Comcast Business",
+    location: "Paris, France",
+    isp: "Orange France",
     status: "active" as const,
-    latency: 32,
+    latency: 25,
     username: "",
     password: ""
   },
   {
-    id: "ny-res-4",
-    name: "Queens Residential Gateway",
-    ip: "67.244.12.89",
+    id: "eu-res-4",
+    name: "Amsterdam Residential Gateway (Ziggo)",
+    ip: "145.97.23.189",
     port: 1080,
     type: "SOCKS5" as const,
-    location: "Queens, NY",
-    isp: "Optimum Online",
+    location: "Amsterdam, Netherlands",
+    isp: "Ziggo",
     status: "active" as const,
-    latency: 64,
+    latency: 15,
     username: "",
     password: ""
   },
   {
-    id: "ny-res-5",
-    name: "Albany State-Capital Proxy",
-    ip: "69.203.114.205",
+    id: "eu-res-5",
+    name: "Madrid Fiber Proxy (Telefónica)",
+    ip: "2.136.42.107",
     port: 8000,
     type: "HTTP" as const,
-    location: "Albany, NY",
-    isp: "Charter Communications",
+    location: "Madrid, Spain",
+    isp: "Telefónica de España",
     status: "active" as const,
-    latency: 78,
+    latency: 35,
     username: "",
     password: ""
   }
 ];
 
-// Generate 250 additional mock global proxies including mobile carriers with mobile IPs
+// Generate 250 additional mock European proxies including mobile carriers with European mobile IPs
 const carriersList = [
-  { country: "Bangladesh", location: "Dhaka", isp: "Grameenphone 4G LTE", ipPrefix: "37.111" },
-  { country: "Bangladesh", location: "Chittagong", isp: "Robi Axiata 4G", ipPrefix: "103.230" },
-  { country: "Bangladesh", location: "Sylhet", isp: "Banglalink 4G", ipPrefix: "203.112" },
-  { country: "Bangladesh", location: "Dhaka", isp: "Teletalk 5G", ipPrefix: "103.242" },
-  { country: "USA", location: "New York, NY", isp: "Verizon Wireless 5G", ipPrefix: "172.56" },
-  { country: "USA", location: "Los Angeles, CA", isp: "AT&T Mobility 5G", ipPrefix: "166.137" },
-  { country: "USA", location: "Chicago, IL", isp: "T-Mobile US 5G", ipPrefix: "172.58" },
   { country: "UK", location: "London", isp: "EE Mobile 5G", ipPrefix: "82.132" },
   { country: "UK", location: "Manchester", isp: "Vodafone UK LTE", ipPrefix: "94.197" },
   { country: "UK", location: "Birmingham", isp: "O2 UK 4G", ipPrefix: "109.155" },
-  { country: "India", location: "Mumbai", isp: "Reliance Jio 5G", ipPrefix: "157.44" },
-  { country: "India", location: "Delhi", isp: "Airtel India 5G", ipPrefix: "223.225" },
-  { country: "India", location: "Kolkata", isp: "Vi India 4G", ipPrefix: "103.241" },
-  { country: "Canada", location: "Toronto", isp: "Rogers Wireless 5G", ipPrefix: "174.112" },
-  { country: "Canada", location: "Vancouver", isp: "Bell Mobility LTE", ipPrefix: "184.150" },
   { country: "Germany", location: "Berlin", isp: "Telekom.de 5G", ipPrefix: "80.187" },
   { country: "Germany", location: "Munich", isp: "Vodafone.de LTE", ipPrefix: "109.40" },
-  { country: "Japan", location: "Tokyo", isp: "NTT Docomo 5G", ipPrefix: "110.163" },
-  { country: "Japan", location: "Osaka", isp: "SoftBank Mobile LTE", ipPrefix: "126.142" },
-  { country: "Australia", location: "Sydney", isp: "Telstra Mobile 5G", ipPrefix: "101.191" },
-  { country: "Australia", location: "Melbourne", isp: "Optus Mobile LTE", ipPrefix: "120.150" },
-  { country: "Singapore", location: "Singapore", isp: "Singtel Mobile 5G", ipPrefix: "116.88" },
-  { country: "Singapore", location: "Singapore", isp: "StarHub Mobile 4G", ipPrefix: "183.90" },
+  { country: "Germany", location: "Frankfurt", isp: "O2 de 5G", ipPrefix: "31.18" },
   { country: "France", location: "Paris", isp: "Orange France 5G", ipPrefix: "90.84" },
   { country: "France", location: "Lyon", isp: "SFR Mobile LTE", ipPrefix: "176.128" },
-  { country: "UAE", location: "Dubai", isp: "Etisalat 5G Network", ipPrefix: "194.170" },
-  { country: "Saudi Arabia", location: "Riyadh", isp: "STC 5G Mobile", ipPrefix: "212.118" },
-  { country: "Brazil", location: "Sao Paulo", isp: "Vivo Mobile 5G", ipPrefix: "177.126" },
-  { country: "Malaysia", location: "Kuala Lumpur", isp: "CelcomDigi 5G Network", ipPrefix: "115.135" }
+  { country: "France", location: "Marseille", isp: "Bouygues 4G", ipPrefix: "37.14" },
+  { country: "Netherlands", location: "Amsterdam", isp: "KPN Mobile 5G", ipPrefix: "31.20" },
+  { country: "Netherlands", location: "Rotterdam", isp: "Vodafone NL LTE", ipPrefix: "145.95" },
+  { country: "Spain", location: "Madrid", isp: "Movistar 5G", ipPrefix: "2.138" },
+  { country: "Spain", location: "Barcelona", isp: "Orange España 4G", ipPrefix: "90.160" },
+  { country: "Italy", location: "Rome", isp: "TIM 5G", ipPrefix: "5.90" },
+  { country: "Italy", location: "Milan", isp: "Vodafone Italia LTE", ipPrefix: "109.112" },
+  { country: "Sweden", location: "Stockholm", isp: "Telia 5G", ipPrefix: "81.224" },
+  { country: "Switzerland", location: "Zurich", isp: "Swisscom 5G LTE", ipPrefix: "85.4" },
+  { country: "Poland", location: "Warsaw", isp: "Orange Polska LTE", ipPrefix: "94.254" },
+  { country: "Belgium", location: "Brussels", isp: "Proximus 5G", ipPrefix: "109.130" },
+  { country: "Ireland", location: "Dublin", isp: "Three Ireland LTE", ipPrefix: "109.76" }
 ];
 
-const generalIsps = ["Verizon Fios", "Spectrum", "Optimum Online", "Comcast Business", "AT&T", "T-Mobile Home Internet"];
-const generalLocations = ["New York, NY", "Brooklyn, NY", "Manhattan, NY", "Queens, NY", "Bronx, NY", "Staten Island, NY", "Yonkers, NY", "Syracuse, NY"];
+const generalIsps = [
+  "BT Broadband (UK)", 
+  "Virgin Media (UK)", 
+  "Deutsche Telekom (Germany)", 
+  "Vodafone (Germany)", 
+  "Orange (France)", 
+  "Free Telecom (France)", 
+  "KPN (Netherlands)", 
+  "Ziggo (Netherlands)", 
+  "Telefónica (Spain)", 
+  "TIM (Italy)",
+  "Telia (Sweden)",
+  "Swisscom (Switzerland)",
+  "Belgacom (Belgium)",
+  "Eir (Ireland)"
+];
+
+const generalLocations = [
+  "London, UK",
+  "Manchester, UK",
+  "Birmingham, UK",
+  "Berlin, Germany",
+  "Munich, Germany",
+  "Frankfurt, Germany",
+  "Paris, France",
+  "Lyon, France",
+  "Amsterdam, Netherlands",
+  "Rotterdam, Netherlands",
+  "Madrid, Spain",
+  "Barcelona, Spain",
+  "Rome, Italy",
+  "Milan, Italy",
+  "Stockholm, Sweden",
+  "Zurich, Switzerland",
+  "Brussels, Belgium",
+  "Dublin, Ireland"
+];
+
 const types: ("HTTP" | "HTTPS" | "SOCKS5")[] = ["HTTP", "HTTPS", "SOCKS5"];
 
 for (let i = 6; i <= 255; i++) {
@@ -132,14 +159,17 @@ for (let i = 6; i <= 255; i++) {
     isp = carrier.isp;
     name = `Mobile Node ${i} (${carrier.country})`;
   } else {
-    ip = `104.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+    // European residential IP prefix simulation
+    const prefixes = ["82", "80", "90", "145", "2", "31", "109", "94", "37", "176", "185", "195"];
+    const chosenPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    ip = `${chosenPrefix}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
     location = generalLocations[Math.floor(Math.random() * generalLocations.length)];
     isp = generalIsps[Math.floor(Math.random() * generalIsps.length)];
-    name = `NY Node ${i} (${location})`;
+    name = `EU Node ${i} (${location})`;
   }
 
   nyProxies.push({
-    id: `ny-res-${i}`,
+    id: `eu-res-${i}`,
     name: name,
     ip: ip,
     port: [8080, 3128, 8888, 1080, 8000][Math.floor(Math.random() * 5)],
@@ -147,7 +177,7 @@ for (let i = 6; i <= 255; i++) {
     location: location,
     isp: isp,
     status: "active",
-    latency: Math.floor(Math.random() * 60) + 10,
+    latency: Math.floor(Math.random() * 40) + 10,
     username: "",
     password: ""
   });
@@ -163,40 +193,43 @@ function getDeterministicFingerprint(tabId: string, proxyLocation: string, userA
   }
   const seed = Math.abs(hash);
 
-  let timezone = "America/New_York";
-  let locale = "en-US";
+  let timezone = "Europe/London";
+  let locale = "en-GB";
   const locLower = proxyLocation ? proxyLocation.toLowerCase() : "";
   
-  if (locLower.includes("bangladesh")) {
-    timezone = "Asia/Dhaka";
-    locale = "bn-BD";
-  } else if (locLower.includes("uk") || locLower.includes("london") || locLower.includes("united kingdom") || locLower.includes("england")) {
+  if (locLower.includes("uk") || locLower.includes("london") || locLower.includes("united kingdom") || locLower.includes("england") || locLower.includes("great britain")) {
     timezone = "Europe/London";
     locale = "en-GB";
-  } else if (locLower.includes("germany") || locLower.includes("berlin")) {
+  } else if (locLower.includes("germany") || locLower.includes("berlin") || locLower.includes("frankfurt") || locLower.includes("munich")) {
     timezone = "Europe/Berlin";
     locale = "de-DE";
-  } else if (locLower.includes("france") || locLower.includes("paris")) {
+  } else if (locLower.includes("france") || locLower.includes("paris") || locLower.includes("lyon") || locLower.includes("marseille")) {
     timezone = "Europe/Paris";
     locale = "fr-FR";
-  } else if (locLower.includes("japan") || locLower.includes("tokyo")) {
-    timezone = "Asia/Tokyo";
-    locale = "ja-JP";
-  } else if (locLower.includes("singapore")) {
-    timezone = "Asia/Singapore";
-    locale = "en-SG";
-  } else if (locLower.includes("malaysia")) {
-    timezone = "Asia/Kuala_Lumpur";
-    locale = "ms-MY";
-  } else if (locLower.includes("india")) {
-    timezone = "Asia/Kolkata";
-    locale = "en-IN";
-  } else if (locLower.includes("ca") || locLower.includes("california") || locLower.includes("los angeles") || locLower.includes("san francisco")) {
-    timezone = "America/Los_Angeles";
-    locale = "en-US";
-  } else if (locLower.includes("il") || locLower.includes("chicago")) {
-    timezone = "America/Chicago";
-    locale = "en-US";
+  } else if (locLower.includes("netherlands") || locLower.includes("amsterdam") || locLower.includes("rotterdam")) {
+    timezone = "Europe/Amsterdam";
+    locale = "nl-NL";
+  } else if (locLower.includes("spain") || locLower.includes("madrid") || locLower.includes("barcelona")) {
+    timezone = "Europe/Madrid";
+    locale = "es-ES";
+  } else if (locLower.includes("italy") || locLower.includes("rome") || locLower.includes("milan")) {
+    timezone = "Europe/Rome";
+    locale = "it-IT";
+  } else if (locLower.includes("sweden") || locLower.includes("stockholm")) {
+    timezone = "Europe/Stockholm";
+    locale = "sv-SE";
+  } else if (locLower.includes("switzerland") || locLower.includes("zurich")) {
+    timezone = "Europe/Zurich";
+    locale = "de-CH";
+  } else if (locLower.includes("poland") || locLower.includes("warsaw")) {
+    timezone = "Europe/Warsaw";
+    locale = "pl-PL";
+  } else if (locLower.includes("belgium") || locLower.includes("brussels")) {
+    timezone = "Europe/Brussels";
+    locale = "fr-BE";
+  } else if (locLower.includes("ireland") || locLower.includes("dublin")) {
+    timezone = "Europe/Dublin";
+    locale = "en-IE";
   }
 
   const isApple = userAgent && (userAgent.includes("iPhone") || userAgent.includes("iPad") || userAgent.includes("Macintosh") || userAgent.includes("Apple"));
@@ -435,7 +468,7 @@ app.get("/api/proxy-request", async (req, res) => {
     }
 
     // If it is a real custom proxy (not pre-configured dummy proxies), apply proxy agent
-    const isRealProxy = selectedProxy && !selectedProxy.id.startsWith("ny-res-");
+    const isRealProxy = selectedProxy && !selectedProxy.id.startsWith("ny-res-") && !selectedProxy.id.startsWith("eu-res-");
     if (isRealProxy && selectedProxy.ip) {
       const auth = selectedProxy.username && selectedProxy.password 
         ? `${selectedProxy.username}:${selectedProxy.password}@` 
@@ -445,7 +478,7 @@ app.get("/api/proxy-request", async (req, res) => {
       config.httpAgent = agent;
       config.httpsAgent = agent;
     } else {
-      // Simulate NY Proxy by injecting New York Forwarded Headers
+      // Simulate EU Proxy by injecting European Forwarded Headers
       config.headers = {
         ...config.headers,
         "X-Forwarded-For": selectedProxy.ip,

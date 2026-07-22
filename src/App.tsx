@@ -38,40 +38,43 @@ export const getDeterministicFingerprintUI = (tabId: string, location: string, u
   }
   const seed = Math.abs(hash);
 
-  let timezone = "America/New_York";
-  let locale = "en-US";
+  let timezone = "Europe/London";
+  let locale = "en-GB";
   const locLower = location ? location.toLowerCase() : "";
   
-  if (locLower.includes("bangladesh")) {
-    timezone = "Asia/Dhaka";
-    locale = "bn-BD";
-  } else if (locLower.includes("uk") || locLower.includes("london") || locLower.includes("united kingdom")) {
+  if (locLower.includes("uk") || locLower.includes("london") || locLower.includes("united kingdom") || locLower.includes("england") || locLower.includes("great britain")) {
     timezone = "Europe/London";
     locale = "en-GB";
-  } else if (locLower.includes("germany") || locLower.includes("berlin")) {
+  } else if (locLower.includes("germany") || locLower.includes("berlin") || locLower.includes("frankfurt") || locLower.includes("munich")) {
     timezone = "Europe/Berlin";
     locale = "de-DE";
-  } else if (locLower.includes("france") || locLower.includes("paris")) {
+  } else if (locLower.includes("france") || locLower.includes("paris") || locLower.includes("lyon") || locLower.includes("marseille")) {
     timezone = "Europe/Paris";
     locale = "fr-FR";
-  } else if (locLower.includes("japan") || locLower.includes("tokyo")) {
-    timezone = "Asia/Tokyo";
-    locale = "ja-JP";
-  } else if (locLower.includes("singapore")) {
-    timezone = "Asia/Singapore";
-    locale = "en-SG";
-  } else if (locLower.includes("malaysia")) {
-    timezone = "Asia/Kuala_Lumpur";
-    locale = "ms-MY";
-  } else if (locLower.includes("india")) {
-    timezone = "Asia/Kolkata";
-    locale = "en-IN";
-  } else if (locLower.includes("ca") || locLower.includes("california") || locLower.includes("los angeles")) {
-    timezone = "America/Los_Angeles";
-    locale = "en-US";
-  } else if (locLower.includes("il") || locLower.includes("chicago")) {
-    timezone = "America/Chicago";
-    locale = "en-US";
+  } else if (locLower.includes("netherlands") || locLower.includes("amsterdam") || locLower.includes("rotterdam")) {
+    timezone = "Europe/Amsterdam";
+    locale = "nl-NL";
+  } else if (locLower.includes("spain") || locLower.includes("madrid") || locLower.includes("barcelona")) {
+    timezone = "Europe/Madrid";
+    locale = "es-ES";
+  } else if (locLower.includes("italy") || locLower.includes("rome") || locLower.includes("milan")) {
+    timezone = "Europe/Rome";
+    locale = "it-IT";
+  } else if (locLower.includes("sweden") || locLower.includes("stockholm")) {
+    timezone = "Europe/Stockholm";
+    locale = "sv-SE";
+  } else if (locLower.includes("switzerland") || locLower.includes("zurich")) {
+    timezone = "Europe/Zurich";
+    locale = "de-CH";
+  } else if (locLower.includes("poland") || locLower.includes("warsaw")) {
+    timezone = "Europe/Warsaw";
+    locale = "pl-PL";
+  } else if (locLower.includes("belgium") || locLower.includes("brussels")) {
+    timezone = "Europe/Brussels";
+    locale = "fr-BE";
+  } else if (locLower.includes("ireland") || locLower.includes("dublin")) {
+    timezone = "Europe/Dublin";
+    locale = "en-IE";
   }
 
   const isApple = userAgent && (userAgent.includes("iPhone") || userAgent.includes("iPad") || userAgent.includes("Macintosh") || userAgent.includes("Apple"));
